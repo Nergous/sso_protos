@@ -9,6 +9,7 @@ service Auth {
     rpc Login (LoginRequest) returns (LoginResponse);
     rpc IsAdmin (IsAdminRequest) returns (IsAdminResponse);
     rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+    rpc UserInfo(UserInfoRequest) returns (UserInfoResponse);
 }
 
 message RegisterRequest {
@@ -47,4 +48,14 @@ message ValidateTokenRequest {
 message ValidateTokenResponse {
     int64 user_id = 1;
     bool valid = 2;
+}
+
+message UserInfoRequest {
+    int64 user_id = 1;
+}
+
+message UserInfoResponse {
+    string email = 1;
+    string steam_url = 2;
+    string path_to_photo = 3;
 }
