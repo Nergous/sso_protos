@@ -14,6 +14,8 @@ service Auth {
 message RegisterRequest {
     string email = 1;
     string password = 2;
+    string steam_url = 3;
+    string path_to_photo = 4;
 }
 
 message RegisterResponse {

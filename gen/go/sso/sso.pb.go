@@ -25,6 +25,8 @@ type RegisterRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
 	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
+	SteamUrl      string                 `protobuf:"bytes,3,opt,name=steam_url,json=steamUrl,proto3" json:"steam_url,omitempty"`
+	PathToPhoto   string                 `protobuf:"bytes,4,opt,name=path_to_photo,json=pathToPhoto,proto3" json:"path_to_photo,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -69,6 +71,20 @@ func (x *RegisterRequest) GetEmail() string {
 func (x *RegisterRequest) GetPassword() string {
 	if x != nil {
 		return x.Password
+	}
+	return ""
+}
+
+func (x *RegisterRequest) GetSteamUrl() string {
+	if x != nil {
+		return x.SteamUrl
+	}
+	return ""
+}
+
+func (x *RegisterRequest) GetPathToPhoto() string {
+	if x != nil {
+		return x.PathToPhoto
 	}
 	return ""
 }
@@ -409,10 +425,12 @@ var File_sso_sso_proto protoreflect.FileDescriptor
 
 const file_sso_sso_proto_rawDesc = "" +
 	"\n" +
-	"\rsso/sso.proto\x12\x04auth\"C\n" +
+	"\rsso/sso.proto\x12\x04auth\"\x84\x01\n" +
 	"\x0fRegisterRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\"+\n" +
+	"\bpassword\x18\x02 \x01(\tR\bpassword\x12\x1b\n" +
+	"\tsteam_url\x18\x03 \x01(\tR\bsteamUrl\x12\"\n" +
+	"\rpath_to_photo\x18\x04 \x01(\tR\vpathToPhoto\"+\n" +
 	"\x10RegisterResponse\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\"W\n" +
 	"\fLoginRequest\x12\x14\n" +
