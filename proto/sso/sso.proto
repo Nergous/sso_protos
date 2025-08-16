@@ -79,9 +79,10 @@ message User {
 message UpdateUserRequest {
     int64 id = 1;
     string email = 2;
-    string steam_url = 3;
-    string path_to_photo = 4;
-    bool is_admin = 5;
+    string password = 3;
+    string steam_url = 4;
+    string path_to_photo = 5;
+    bool is_admin = 6;
 }
 
 message UpdateUserResponse {}

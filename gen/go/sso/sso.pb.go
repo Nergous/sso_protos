@@ -685,9 +685,10 @@ type UpdateUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
-	SteamUrl      string                 `protobuf:"bytes,3,opt,name=steam_url,json=steamUrl,proto3" json:"steam_url,omitempty"`
-	PathToPhoto   string                 `protobuf:"bytes,4,opt,name=path_to_photo,json=pathToPhoto,proto3" json:"path_to_photo,omitempty"`
-	IsAdmin       bool                   `protobuf:"varint,5,opt,name=is_admin,json=isAdmin,proto3" json:"is_admin,omitempty"`
+	Password      string                 `protobuf:"bytes,3,opt,name=password,proto3" json:"password,omitempty"`
+	SteamUrl      string                 `protobuf:"bytes,4,opt,name=steam_url,json=steamUrl,proto3" json:"steam_url,omitempty"`
+	PathToPhoto   string                 `protobuf:"bytes,5,opt,name=path_to_photo,json=pathToPhoto,proto3" json:"path_to_photo,omitempty"`
+	IsAdmin       bool                   `protobuf:"varint,6,opt,name=is_admin,json=isAdmin,proto3" json:"is_admin,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -732,6 +733,13 @@ func (x *UpdateUserRequest) GetId() int64 {
 func (x *UpdateUserRequest) GetEmail() string {
 	if x != nil {
 		return x.Email
+	}
+	return ""
+}
+
+func (x *UpdateUserRequest) GetPassword() string {
+	if x != nil {
+		return x.Password
 	}
 	return ""
 }
@@ -835,13 +843,14 @@ const file_sso_sso_proto_rawDesc = "" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12\x1b\n" +
 	"\tsteam_url\x18\x03 \x01(\tR\bsteamUrl\x12\"\n" +
 	"\rpath_to_photo\x18\x04 \x01(\tR\vpathToPhoto\x12\x19\n" +
-	"\bis_admin\x18\x05 \x01(\bR\aisAdmin\"\x95\x01\n" +
+	"\bis_admin\x18\x05 \x01(\bR\aisAdmin\"\xb1\x01\n" +
 	"\x11UpdateUserRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x14\n" +
-	"\x05email\x18\x02 \x01(\tR\x05email\x12\x1b\n" +
-	"\tsteam_url\x18\x03 \x01(\tR\bsteamUrl\x12\"\n" +
-	"\rpath_to_photo\x18\x04 \x01(\tR\vpathToPhoto\x12\x19\n" +
-	"\bis_admin\x18\x05 \x01(\bR\aisAdmin\"\x14\n" +
+	"\x05email\x18\x02 \x01(\tR\x05email\x12\x1a\n" +
+	"\bpassword\x18\x03 \x01(\tR\bpassword\x12\x1b\n" +
+	"\tsteam_url\x18\x04 \x01(\tR\bsteamUrl\x12\"\n" +
+	"\rpath_to_photo\x18\x05 \x01(\tR\vpathToPhoto\x12\x19\n" +
+	"\bis_admin\x18\x06 \x01(\bR\aisAdmin\"\x14\n" +
 	"\x12UpdateUserResponse2\xb2\x03\n" +
 	"\x04Auth\x129\n" +
 	"\bRegister\x12\x15.auth.RegisterRequest\x1a\x16.auth.RegisterResponse\x120\n" +
