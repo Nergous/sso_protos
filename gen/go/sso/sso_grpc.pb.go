@@ -24,7 +24,7 @@ const (
 	Auth_IsAdmin_FullMethodName       = "/auth.Auth/IsAdmin"
 	Auth_ValidateToken_FullMethodName = "/auth.Auth/ValidateToken"
 	Auth_UserInfo_FullMethodName      = "/auth.Auth/UserInfo"
-	Auth_GetAllUser_FullMethodName    = "/auth.Auth/GetAllUser"
+	Auth_GetAllUsers_FullMethodName   = "/auth.Auth/GetAllUsers"
 	Auth_UpdateUser_FullMethodName    = "/auth.Auth/UpdateUser"
 )
 
@@ -37,7 +37,7 @@ type AuthClient interface {
 	IsAdmin(ctx context.Context, in *IsAdminRequest, opts ...grpc.CallOption) (*IsAdminResponse, error)
 	ValidateToken(ctx context.Context, in *ValidateTokenRequest, opts ...grpc.CallOption) (*ValidateTokenResponse, error)
 	UserInfo(ctx context.Context, in *UserInfoRequest, opts ...grpc.CallOption) (*UserInfoResponse, error)
-	GetAllUser(ctx context.Context, in *GetAllUserRequest, opts ...grpc.CallOption) (*GetAllUserResponse, error)
+	GetAllUsers(ctx context.Context, in *GetAllUsersRequest, opts ...grpc.CallOption) (*GetAllUsersResponse, error)
 	UpdateUser(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*UpdateUserResponse, error)
 }
 
@@ -99,10 +99,10 @@ func (c *authClient) UserInfo(ctx context.Context, in *UserInfoRequest, opts ...
 	return out, nil
 }
 
-func (c *authClient) GetAllUser(ctx context.Context, in *GetAllUserRequest, opts ...grpc.CallOption) (*GetAllUserResponse, error) {
+func (c *authClient) GetAllUsers(ctx context.Context, in *GetAllUsersRequest, opts ...grpc.CallOption) (*GetAllUsersResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetAllUserResponse)
-	err := c.cc.Invoke(ctx, Auth_GetAllUser_FullMethodName, in, out, cOpts...)
+	out := new(GetAllUsersResponse)
+	err := c.cc.Invoke(ctx, Auth_GetAllUsers_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ type AuthServer interface {
 	IsAdmin(context.Context, *IsAdminRequest) (*IsAdminResponse, error)
 	ValidateToken(context.Context, *ValidateTokenRequest) (*ValidateTokenResponse, error)
 	UserInfo(context.Context, *UserInfoRequest) (*UserInfoResponse, error)
-	GetAllUser(context.Context, *GetAllUserRequest) (*GetAllUserResponse, error)
+	GetAllUsers(context.Context, *GetAllUsersRequest) (*GetAllUsersResponse, error)
 	UpdateUser(context.Context, *UpdateUserRequest) (*UpdateUserResponse, error)
 	mustEmbedUnimplementedAuthServer()
 }
@@ -155,8 +155,8 @@ func (UnimplementedAuthServer) ValidateToken(context.Context, *ValidateTokenRequ
 func (UnimplementedAuthServer) UserInfo(context.Context, *UserInfoRequest) (*UserInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UserInfo not implemented")
 }
-func (UnimplementedAuthServer) GetAllUser(context.Context, *GetAllUserRequest) (*GetAllUserResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetAllUser not implemented")
+func (UnimplementedAuthServer) GetAllUsers(context.Context, *GetAllUsersRequest) (*GetAllUsersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAllUsers not implemented")
 }
 func (UnimplementedAuthServer) UpdateUser(context.Context, *UpdateUserRequest) (*UpdateUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateUser not implemented")
@@ -272,20 +272,20 @@ func _Auth_UserInfo_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Auth_GetAllUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetAllUserRequest)
+func _Auth_GetAllUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAllUsersRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AuthServer).GetAllUser(ctx, in)
+		return srv.(AuthServer).GetAllUsers(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Auth_GetAllUser_FullMethodName,
+		FullMethod: Auth_GetAllUsers_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServer).GetAllUser(ctx, req.(*GetAllUserRequest))
+		return srv.(AuthServer).GetAllUsers(ctx, req.(*GetAllUsersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -336,8 +336,8 @@ var Auth_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Auth_UserInfo_Handler,
 		},
 		{
-			MethodName: "GetAllUser",
-			Handler:    _Auth_GetAllUser_Handler,
+			MethodName: "GetAllUsers",
+			Handler:    _Auth_GetAllUsers_Handler,
 		},
 		{
 			MethodName: "UpdateUser",

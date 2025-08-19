@@ -525,26 +525,26 @@ func (x *UserInfoResponse) GetPathToPhoto() string {
 	return ""
 }
 
-type GetAllUserRequest struct {
+type GetAllUsersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetAllUserRequest) Reset() {
-	*x = GetAllUserRequest{}
+func (x *GetAllUsersRequest) Reset() {
+	*x = GetAllUsersRequest{}
 	mi := &file_sso_sso_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetAllUserRequest) String() string {
+func (x *GetAllUsersRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetAllUserRequest) ProtoMessage() {}
+func (*GetAllUsersRequest) ProtoMessage() {}
 
-func (x *GetAllUserRequest) ProtoReflect() protoreflect.Message {
+func (x *GetAllUsersRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_sso_sso_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -556,32 +556,32 @@ func (x *GetAllUserRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetAllUserRequest.ProtoReflect.Descriptor instead.
-func (*GetAllUserRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetAllUsersRequest.ProtoReflect.Descriptor instead.
+func (*GetAllUsersRequest) Descriptor() ([]byte, []int) {
 	return file_sso_sso_proto_rawDescGZIP(), []int{10}
 }
 
-type GetAllUserResponse struct {
+type GetAllUsersResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	User          []*User                `protobuf:"bytes,1,rep,name=user,proto3" json:"user,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetAllUserResponse) Reset() {
-	*x = GetAllUserResponse{}
+func (x *GetAllUsersResponse) Reset() {
+	*x = GetAllUsersResponse{}
 	mi := &file_sso_sso_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetAllUserResponse) String() string {
+func (x *GetAllUsersResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetAllUserResponse) ProtoMessage() {}
+func (*GetAllUsersResponse) ProtoMessage() {}
 
-func (x *GetAllUserResponse) ProtoReflect() protoreflect.Message {
+func (x *GetAllUsersResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_sso_sso_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -593,12 +593,12 @@ func (x *GetAllUserResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetAllUserResponse.ProtoReflect.Descriptor instead.
-func (*GetAllUserResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetAllUsersResponse.ProtoReflect.Descriptor instead.
+func (*GetAllUsersResponse) Descriptor() ([]byte, []int) {
 	return file_sso_sso_proto_rawDescGZIP(), []int{11}
 }
 
-func (x *GetAllUserResponse) GetUser() []*User {
+func (x *GetAllUsersResponse) GetUser() []*User {
 	if x != nil {
 		return x.User
 	}
@@ -833,9 +833,9 @@ const file_sso_sso_proto_rawDesc = "" +
 	"\x10UserInfoResponse\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1b\n" +
 	"\tsteam_url\x18\x02 \x01(\tR\bsteamUrl\x12\"\n" +
-	"\rpath_to_photo\x18\x03 \x01(\tR\vpathToPhoto\"\x13\n" +
-	"\x11GetAllUserRequest\"4\n" +
-	"\x12GetAllUserResponse\x12\x1e\n" +
+	"\rpath_to_photo\x18\x03 \x01(\tR\vpathToPhoto\"\x14\n" +
+	"\x12GetAllUsersRequest\"5\n" +
+	"\x13GetAllUsersResponse\x12\x1e\n" +
 	"\x04user\x18\x01 \x03(\v2\n" +
 	".auth.UserR\x04user\"\x88\x01\n" +
 	"\x04User\x12\x0e\n" +
@@ -851,15 +851,14 @@ const file_sso_sso_proto_rawDesc = "" +
 	"\tsteam_url\x18\x04 \x01(\tR\bsteamUrl\x12\"\n" +
 	"\rpath_to_photo\x18\x05 \x01(\tR\vpathToPhoto\x12\x19\n" +
 	"\bis_admin\x18\x06 \x01(\bR\aisAdmin\"\x14\n" +
-	"\x12UpdateUserResponse2\xb2\x03\n" +
+	"\x12UpdateUserResponse2\xb5\x03\n" +
 	"\x04Auth\x129\n" +
 	"\bRegister\x12\x15.auth.RegisterRequest\x1a\x16.auth.RegisterResponse\x120\n" +
 	"\x05Login\x12\x12.auth.LoginRequest\x1a\x13.auth.LoginResponse\x126\n" +
 	"\aIsAdmin\x12\x14.auth.IsAdminRequest\x1a\x15.auth.IsAdminResponse\x12H\n" +
 	"\rValidateToken\x12\x1a.auth.ValidateTokenRequest\x1a\x1b.auth.ValidateTokenResponse\x129\n" +
-	"\bUserInfo\x12\x15.auth.UserInfoRequest\x1a\x16.auth.UserInfoResponse\x12?\n" +
-	"\n" +
-	"GetAllUser\x12\x17.auth.GetAllUserRequest\x1a\x18.auth.GetAllUserResponse\x12?\n" +
+	"\bUserInfo\x12\x15.auth.UserInfoRequest\x1a\x16.auth.UserInfoResponse\x12B\n" +
+	"\vGetAllUsers\x12\x18.auth.GetAllUsersRequest\x1a\x19.auth.GetAllUsersResponse\x12?\n" +
 	"\n" +
 	"UpdateUser\x12\x17.auth.UpdateUserRequest\x1a\x18.auth.UpdateUserResponseB\x16Z\x14nergous.sso.v1;ssov1b\x06proto3"
 
@@ -887,27 +886,27 @@ var file_sso_sso_proto_goTypes = []any{
 	(*ValidateTokenResponse)(nil), // 7: auth.ValidateTokenResponse
 	(*UserInfoRequest)(nil),       // 8: auth.UserInfoRequest
 	(*UserInfoResponse)(nil),      // 9: auth.UserInfoResponse
-	(*GetAllUserRequest)(nil),     // 10: auth.GetAllUserRequest
-	(*GetAllUserResponse)(nil),    // 11: auth.GetAllUserResponse
+	(*GetAllUsersRequest)(nil),    // 10: auth.GetAllUsersRequest
+	(*GetAllUsersResponse)(nil),   // 11: auth.GetAllUsersResponse
 	(*User)(nil),                  // 12: auth.User
 	(*UpdateUserRequest)(nil),     // 13: auth.UpdateUserRequest
 	(*UpdateUserResponse)(nil),    // 14: auth.UpdateUserResponse
 }
 var file_sso_sso_proto_depIdxs = []int32{
-	12, // 0: auth.GetAllUserResponse.user:type_name -> auth.User
+	12, // 0: auth.GetAllUsersResponse.user:type_name -> auth.User
 	0,  // 1: auth.Auth.Register:input_type -> auth.RegisterRequest
 	2,  // 2: auth.Auth.Login:input_type -> auth.LoginRequest
 	4,  // 3: auth.Auth.IsAdmin:input_type -> auth.IsAdminRequest
 	6,  // 4: auth.Auth.ValidateToken:input_type -> auth.ValidateTokenRequest
 	8,  // 5: auth.Auth.UserInfo:input_type -> auth.UserInfoRequest
-	10, // 6: auth.Auth.GetAllUser:input_type -> auth.GetAllUserRequest
+	10, // 6: auth.Auth.GetAllUsers:input_type -> auth.GetAllUsersRequest
 	13, // 7: auth.Auth.UpdateUser:input_type -> auth.UpdateUserRequest
 	1,  // 8: auth.Auth.Register:output_type -> auth.RegisterResponse
 	3,  // 9: auth.Auth.Login:output_type -> auth.LoginResponse
 	5,  // 10: auth.Auth.IsAdmin:output_type -> auth.IsAdminResponse
 	7,  // 11: auth.Auth.ValidateToken:output_type -> auth.ValidateTokenResponse
 	9,  // 12: auth.Auth.UserInfo:output_type -> auth.UserInfoResponse
-	11, // 13: auth.Auth.GetAllUser:output_type -> auth.GetAllUserResponse
+	11, // 13: auth.Auth.GetAllUsers:output_type -> auth.GetAllUsersResponse
 	14, // 14: auth.Auth.UpdateUser:output_type -> auth.UpdateUserResponse
 	8,  // [8:15] is the sub-list for method output_type
 	1,  // [1:8] is the sub-list for method input_type
