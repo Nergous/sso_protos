@@ -933,6 +933,86 @@ func (x *RefreshRequest) GetRefreshToken() string {
 	return ""
 }
 
+type DeleteUserRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteUserRequest) Reset() {
+	*x = DeleteUserRequest{}
+	mi := &file_sso_sso_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteUserRequest) ProtoMessage() {}
+
+func (x *DeleteUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_sso_sso_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteUserRequest.ProtoReflect.Descriptor instead.
+func (*DeleteUserRequest) Descriptor() ([]byte, []int) {
+	return file_sso_sso_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *DeleteUserRequest) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+type DeleteUserResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteUserResponse) Reset() {
+	*x = DeleteUserResponse{}
+	mi := &file_sso_sso_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteUserResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteUserResponse) ProtoMessage() {}
+
+func (x *DeleteUserResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_sso_sso_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteUserResponse.ProtoReflect.Descriptor instead.
+func (*DeleteUserResponse) Descriptor() ([]byte, []int) {
+	return file_sso_sso_proto_rawDescGZIP(), []int{19}
+}
+
 var File_sso_sso_proto protoreflect.FileDescriptor
 
 const file_sso_sso_proto_rawDesc = "" +
@@ -989,7 +1069,10 @@ const file_sso_sso_proto_rawDesc = "" +
 	"\bis_admin\x18\x06 \x01(\bR\aisAdmin\"\x14\n" +
 	"\x12UpdateUserResponse\"5\n" +
 	"\x0eRefreshRequest\x12#\n" +
-	"\rrefresh_token\x18\x01 \x01(\tR\frefreshToken2\xa0\x04\n" +
+	"\rrefresh_token\x18\x01 \x01(\tR\frefreshToken\"#\n" +
+	"\x11DeleteUserRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\"\x14\n" +
+	"\x12DeleteUserResponse2\xe1\x04\n" +
 	"\x04Auth\x129\n" +
 	"\bRegister\x12\x15.auth.RegisterRequest\x1a\x16.auth.RegisterResponse\x120\n" +
 	"\x05Login\x12\x12.auth.LoginRequest\x1a\x13.auth.LoginResponse\x123\n" +
@@ -1000,7 +1083,9 @@ const file_sso_sso_proto_rawDesc = "" +
 	"\bUserInfo\x12\x15.auth.UserInfoRequest\x1a\x16.auth.UserInfoResponse\x12B\n" +
 	"\vGetAllUsers\x12\x18.auth.GetAllUsersRequest\x1a\x19.auth.GetAllUsersResponse\x12?\n" +
 	"\n" +
-	"UpdateUser\x12\x17.auth.UpdateUserRequest\x1a\x18.auth.UpdateUserResponseB\x16Z\x14nergous.sso.v1;ssov1b\x06proto3"
+	"UpdateUser\x12\x17.auth.UpdateUserRequest\x1a\x18.auth.UpdateUserResponse\x12?\n" +
+	"\n" +
+	"DeleteUser\x12\x17.auth.DeleteUserRequest\x1a\x18.auth.DeleteUserResponseB\x16Z\x14nergous.sso.v1;ssov1b\x06proto3"
 
 var (
 	file_sso_sso_proto_rawDescOnce sync.Once
@@ -1014,7 +1099,7 @@ func file_sso_sso_proto_rawDescGZIP() []byte {
 	return file_sso_sso_proto_rawDescData
 }
 
-var file_sso_sso_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_sso_sso_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_sso_sso_proto_goTypes = []any{
 	(*RegisterRequest)(nil),       // 0: auth.RegisterRequest
 	(*RegisterResponse)(nil),      // 1: auth.RegisterResponse
@@ -1034,6 +1119,8 @@ var file_sso_sso_proto_goTypes = []any{
 	(*UpdateUserRequest)(nil),     // 15: auth.UpdateUserRequest
 	(*UpdateUserResponse)(nil),    // 16: auth.UpdateUserResponse
 	(*RefreshRequest)(nil),        // 17: auth.RefreshRequest
+	(*DeleteUserRequest)(nil),     // 18: auth.DeleteUserRequest
+	(*DeleteUserResponse)(nil),    // 19: auth.DeleteUserResponse
 }
 var file_sso_sso_proto_depIdxs = []int32{
 	14, // 0: auth.GetAllUsersResponse.user:type_name -> auth.User
@@ -1046,17 +1133,19 @@ var file_sso_sso_proto_depIdxs = []int32{
 	10, // 7: auth.Auth.UserInfo:input_type -> auth.UserInfoRequest
 	12, // 8: auth.Auth.GetAllUsers:input_type -> auth.GetAllUsersRequest
 	15, // 9: auth.Auth.UpdateUser:input_type -> auth.UpdateUserRequest
-	1,  // 10: auth.Auth.Register:output_type -> auth.RegisterResponse
-	3,  // 11: auth.Auth.Login:output_type -> auth.LoginResponse
-	5,  // 12: auth.Auth.Logout:output_type -> auth.LogoutResponse
-	7,  // 13: auth.Auth.IsAdmin:output_type -> auth.IsAdminResponse
-	3,  // 14: auth.Auth.Refresh:output_type -> auth.LoginResponse
-	9,  // 15: auth.Auth.ValidateToken:output_type -> auth.ValidateTokenResponse
-	11, // 16: auth.Auth.UserInfo:output_type -> auth.UserInfoResponse
-	13, // 17: auth.Auth.GetAllUsers:output_type -> auth.GetAllUsersResponse
-	16, // 18: auth.Auth.UpdateUser:output_type -> auth.UpdateUserResponse
-	10, // [10:19] is the sub-list for method output_type
-	1,  // [1:10] is the sub-list for method input_type
+	18, // 10: auth.Auth.DeleteUser:input_type -> auth.DeleteUserRequest
+	1,  // 11: auth.Auth.Register:output_type -> auth.RegisterResponse
+	3,  // 12: auth.Auth.Login:output_type -> auth.LoginResponse
+	5,  // 13: auth.Auth.Logout:output_type -> auth.LogoutResponse
+	7,  // 14: auth.Auth.IsAdmin:output_type -> auth.IsAdminResponse
+	3,  // 15: auth.Auth.Refresh:output_type -> auth.LoginResponse
+	9,  // 16: auth.Auth.ValidateToken:output_type -> auth.ValidateTokenResponse
+	11, // 17: auth.Auth.UserInfo:output_type -> auth.UserInfoResponse
+	13, // 18: auth.Auth.GetAllUsers:output_type -> auth.GetAllUsersResponse
+	16, // 19: auth.Auth.UpdateUser:output_type -> auth.UpdateUserResponse
+	19, // 20: auth.Auth.DeleteUser:output_type -> auth.DeleteUserResponse
+	11, // [11:21] is the sub-list for method output_type
+	1,  // [1:11] is the sub-list for method input_type
 	1,  // [1:1] is the sub-list for extension type_name
 	1,  // [1:1] is the sub-list for extension extendee
 	0,  // [0:1] is the sub-list for field type_name
@@ -1073,7 +1162,7 @@ func file_sso_sso_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_sso_sso_proto_rawDesc), len(file_sso_sso_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   18,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
