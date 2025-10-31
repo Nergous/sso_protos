@@ -40,7 +40,6 @@ message UpdateUserRequest {
     string steam_url = 4;
     string path_to_photo = 5;
 }
-
 message UpdateUserResponse {}
 
 
