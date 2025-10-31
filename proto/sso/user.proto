@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package auth;
+
+option go_package = "nergous.sso.v1;ssov1";
+
+service User {
+    rpc UserInfo(UserInfoRequest) returns (UserInfoResponse);
+    rpc GetAllUsers(GetAllUsersRequest) returns (GetAllUsersResponse);
+    rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
+    rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+}
+
+message UserInfoRequest {
+    int64 user_id = 1;
+}
+
+message UserInfoResponse {
+    string email = 1;
+    string steam_url = 2;
+    string path_to_photo = 3;
+}
+
+message GetAllUsersRequest {}
+
+message  GetAllUsersResponse {
+    repeated UserModel user = 1;
+}
+
+message UserModel {
+    int64 id = 1;
+    string email = 2;
+    string steam_url = 3;
+    string path_to_photo = 4;
+}
+
+message UpdateUserRequest {
+    int64 id = 1;
+    string email = 2;
+    string password = 3;
+    string steam_url = 4;
+    string path_to_photo = 5;
+}
+
+message UpdateUserResponse {}
+
+
+message DeleteUserRequest {
+    int64 id = 1;
+}
+
+message DeleteUserResponse {}

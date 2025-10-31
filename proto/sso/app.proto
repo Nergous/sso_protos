@@ -1,0 +1,87 @@
+syntax = "proto3";
+
+package auth;
+
+option go_package = "nergous.sso.v1;ssov1";
+
+service App {
+    rpc GetApp(GetAppRequest) returns (GetAppResponse);
+    rpc GetAllApps(GetAllAppsRequest) returns (GetAllAppsResponse);
+    rpc CreateApp(CreateAppRequest) returns (CreateAppResponse);
+    rpc UpdateApp(UpdateAppRequest) returns (UpdateAppResponse);
+    rpc DeleteApp(DeleteAppRequest) returns (DeleteAppResponse);
+    rpc ChangeStatusApp(ChangeStatusAppRequest) returns (ChangeStatusAppResponse);
+    rpc IsAdmin(IsAdminRequest) returns (IsAdminResponse);
+    rpc AddAdmin(AddAdminRequest) returns (AddAdminResponse);
+    rpc RemoveAdmin(RemoveAdminRequest) returns (RemoveAdminResponse);
+}
+
+message AppModel {
+    int64 id = 1;
+    string name = 2;
+    string link = 3;
+    bool isenabled = 4;
+}
+
+message GetAppRequest {
+    int64 id = 1;
+}
+
+message GetAppResponse {
+    AppModel app = 1;
+}
+
+message GetAllAppsRequest {}
+
+message GetAllAppsResponse {
+    repeated AppModel apps = 1;
+}
+
+message CreateAppRequest {
+    string name = 1;
+    string link = 2;
+}
+
+message CreateAppResponse {
+    AppModel app = 1;
+}
+
+message UpdateAppRequest {
+    int64 id = 1;
+    string name = 2;
+    string link = 3;
+}
+
+message UpdateAppResponse {}
+
+message DeleteAppRequest {
+    int64 id = 1;
+}
+
+message DeleteAppResponse {}
+
+message ChangeStatusAppRequest {
+    int64 id = 1;
+}
+
+message ChangeStatusAppResponse {}
+
+message IsAdminRequest {
+    int64 user_id = 1;
+}
+
+message IsAdminResponse {
+    bool is_admin = 1;
+}
+
+message AddAdminRequest {
+    int64 user_id = 1;
+}
+
+message AddAdminResponse {}
+
+message RemoveAdminRequest {
+    int64 user_id = 1;
+}
+
+message RemoveAdminResponse {}
