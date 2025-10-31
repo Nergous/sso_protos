@@ -23,7 +23,7 @@ message UserInfoResponse {
 
 message GetAllUsersRequest {}
 message  GetAllUsersResponse {
-    repeated UserModel user = 1;
+    repeated UserModel users = 1;
 }
 
 message UserModel {

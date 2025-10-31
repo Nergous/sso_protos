@@ -163,7 +163,7 @@ func (*GetAllUsersRequest) Descriptor() ([]byte, []int) {
 
 type GetAllUsersResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	User          []*UserModel           `protobuf:"bytes,1,rep,name=user,proto3" json:"user,omitempty"`
+	Users         []*UserModel           `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -198,9 +198,9 @@ func (*GetAllUsersResponse) Descriptor() ([]byte, []int) {
 	return file_sso_user_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *GetAllUsersResponse) GetUser() []*UserModel {
+func (x *GetAllUsersResponse) GetUsers() []*UserModel {
 	if x != nil {
-		return x.User
+		return x.Users
 	}
 	return nil
 }
@@ -476,9 +476,9 @@ const file_sso_user_proto_rawDesc = "" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1b\n" +
 	"\tsteam_url\x18\x02 \x01(\tR\bsteamUrl\x12\"\n" +
 	"\rpath_to_photo\x18\x03 \x01(\tR\vpathToPhoto\"\x14\n" +
-	"\x12GetAllUsersRequest\":\n" +
-	"\x13GetAllUsersResponse\x12#\n" +
-	"\x04user\x18\x01 \x03(\v2\x0f.auth.UserModelR\x04user\"r\n" +
+	"\x12GetAllUsersRequest\"<\n" +
+	"\x13GetAllUsersResponse\x12%\n" +
+	"\x05users\x18\x01 \x03(\v2\x0f.auth.UserModelR\x05users\"r\n" +
 	"\tUserModel\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12\x1b\n" +
@@ -527,7 +527,7 @@ var file_sso_user_proto_goTypes = []any{
 	(*DeleteUserResponse)(nil),  // 8: auth.DeleteUserResponse
 }
 var file_sso_user_proto_depIdxs = []int32{
-	4, // 0: auth.GetAllUsersResponse.user:type_name -> auth.UserModel
+	4, // 0: auth.GetAllUsersResponse.users:type_name -> auth.UserModel
 	0, // 1: auth.User.UserInfo:input_type -> auth.UserInfoRequest
 	2, // 2: auth.User.GetAllUsers:input_type -> auth.GetAllUsersRequest
 	5, // 3: auth.User.UpdateUser:input_type -> auth.UpdateUserRequest
