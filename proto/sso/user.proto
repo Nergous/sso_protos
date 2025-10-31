@@ -22,7 +22,6 @@ message UserInfoResponse {
 }
 
 message GetAllUsersRequest {}
-
 message  GetAllUsersResponse {
     repeated UserModel user = 1;
 }
