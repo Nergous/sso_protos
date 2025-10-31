@@ -42,7 +42,6 @@ message UpdateUserRequest {
 }
 message UpdateUserResponse {}
 
-
 message DeleteUserRequest {
     int64 id = 1;
 }
