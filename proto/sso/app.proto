@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package auth;
 
-option go_package = "nergous.sso.v1;ssov1";
+option go_package = "nergous.sso.v2;ssov2";
 
 service App {
     rpc GetApp(GetAppRequest) returns (GetAppResponse);
