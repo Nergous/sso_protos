@@ -4,7 +4,7 @@
 // 	protoc        v6.30.2
 // source: sso/auth.proto
 
-package ssov1
+package ssov2
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -91,7 +91,7 @@ func (x *RegisterRequest) GetPathToPhoto() string {
 
 type RegisterResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        uint32                 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -126,7 +126,7 @@ func (*RegisterResponse) Descriptor() ([]byte, []int) {
 	return file_sso_auth_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *RegisterResponse) GetUserId() int64 {
+func (x *RegisterResponse) GetUserId() uint32 {
 	if x != nil {
 		return x.UserId
 	}
@@ -137,7 +137,7 @@ type LoginRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
 	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
-	AppId         int32                  `protobuf:"varint,3,opt,name=app_id,json=appId,proto3" json:"app_id,omitempty"`
+	AppId         uint32                 `protobuf:"varint,3,opt,name=app_id,json=appId,proto3" json:"app_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -186,7 +186,7 @@ func (x *LoginRequest) GetPassword() string {
 	return ""
 }
 
-func (x *LoginRequest) GetAppId() int32 {
+func (x *LoginRequest) GetAppId() uint32 {
 	if x != nil {
 		return x.AppId
 	}
@@ -415,7 +415,7 @@ func (x *ValidateTokenRequest) GetToken() string {
 
 type ValidateTokenResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        uint32                 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Valid         bool                   `protobuf:"varint,2,opt,name=valid,proto3" json:"valid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -451,7 +451,7 @@ func (*ValidateTokenResponse) Descriptor() ([]byte, []int) {
 	return file_sso_auth_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *ValidateTokenResponse) GetUserId() int64 {
+func (x *ValidateTokenResponse) GetUserId() uint32 {
 	if x != nil {
 		return x.UserId
 	}
@@ -476,11 +476,11 @@ const file_sso_auth_proto_rawDesc = "" +
 	"\tsteam_url\x18\x03 \x01(\tR\bsteamUrl\x12\"\n" +
 	"\rpath_to_photo\x18\x04 \x01(\tR\vpathToPhoto\"+\n" +
 	"\x10RegisterResponse\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\x03R\x06userId\"W\n" +
+	"\auser_id\x18\x01 \x01(\rR\x06userId\"W\n" +
 	"\fLoginRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\x12\x15\n" +
-	"\x06app_id\x18\x03 \x01(\x05R\x05appId\"W\n" +
+	"\x06app_id\x18\x03 \x01(\rR\x05appId\"W\n" +
 	"\rLoginResponse\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12#\n" +
 	"\rrefresh_token\x18\x02 \x01(\tR\frefreshToken\"%\n" +
@@ -492,14 +492,14 @@ const file_sso_auth_proto_rawDesc = "" +
 	"\x14ValidateTokenRequest\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\"F\n" +
 	"\x15ValidateTokenResponse\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x14\n" +
+	"\auser_id\x18\x01 \x01(\rR\x06userId\x12\x14\n" +
 	"\x05valid\x18\x02 \x01(\bR\x05valid2\xa8\x02\n" +
 	"\x04Auth\x129\n" +
 	"\bRegister\x12\x15.auth.RegisterRequest\x1a\x16.auth.RegisterResponse\x120\n" +
 	"\x05Login\x12\x12.auth.LoginRequest\x1a\x13.auth.LoginResponse\x123\n" +
 	"\x06Logout\x12\x13.auth.LogoutRequest\x1a\x14.auth.LogoutResponse\x124\n" +
 	"\aRefresh\x12\x14.auth.RefreshRequest\x1a\x13.auth.LoginResponse\x12H\n" +
-	"\rValidateToken\x12\x1a.auth.ValidateTokenRequest\x1a\x1b.auth.ValidateTokenResponseB\x16Z\x14nergous.sso.v1;ssov1b\x06proto3"
+	"\rValidateToken\x12\x1a.auth.ValidateTokenRequest\x1a\x1b.auth.ValidateTokenResponseB\x16Z\x14nergous.sso.v2;ssov2b\x06proto3"
 
 var (
 	file_sso_auth_proto_rawDescOnce sync.Once

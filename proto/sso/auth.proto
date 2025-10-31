@@ -20,13 +20,13 @@ message RegisterRequest {
 }
 
 message RegisterResponse {
-    int64 user_id = 1;
+    uint32 user_id = 1;
 }
 
 message LoginRequest {
     string email = 1;
     string password = 2;
-    int64 app_id = 3;
+    uint32 app_id = 3;
 }
 
 message LoginResponse {
@@ -49,6 +49,6 @@ message ValidateTokenRequest {
 }
 
 message ValidateTokenResponse {
-    int64 user_id = 1;
+    uint32 user_id = 1;
     bool valid = 2;
 }

@@ -4,7 +4,7 @@
 // 	protoc        v6.30.2
 // source: sso/app.proto
 
-package ssov1
+package ssov2
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -23,7 +23,7 @@ const (
 
 type AppModel struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            uint32                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	Link          string                 `protobuf:"bytes,3,opt,name=link,proto3" json:"link,omitempty"`
 	Isenabled     bool                   `protobuf:"varint,4,opt,name=isenabled,proto3" json:"isenabled,omitempty"`
@@ -61,7 +61,7 @@ func (*AppModel) Descriptor() ([]byte, []int) {
 	return file_sso_app_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *AppModel) GetId() int64 {
+func (x *AppModel) GetId() uint32 {
 	if x != nil {
 		return x.Id
 	}
@@ -91,7 +91,7 @@ func (x *AppModel) GetIsenabled() bool {
 
 type GetAppRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            uint32                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -126,7 +126,7 @@ func (*GetAppRequest) Descriptor() ([]byte, []int) {
 	return file_sso_app_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *GetAppRequest) GetId() int64 {
+func (x *GetAppRequest) GetId() uint32 {
 	if x != nil {
 		return x.Id
 	}
@@ -355,7 +355,7 @@ func (x *CreateAppResponse) GetApp() *AppModel {
 
 type UpdateAppRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            uint32                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	Link          string                 `protobuf:"bytes,3,opt,name=link,proto3" json:"link,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -392,7 +392,7 @@ func (*UpdateAppRequest) Descriptor() ([]byte, []int) {
 	return file_sso_app_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *UpdateAppRequest) GetId() int64 {
+func (x *UpdateAppRequest) GetId() uint32 {
 	if x != nil {
 		return x.Id
 	}
@@ -451,7 +451,7 @@ func (*UpdateAppResponse) Descriptor() ([]byte, []int) {
 
 type DeleteAppRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            uint32                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -486,7 +486,7 @@ func (*DeleteAppRequest) Descriptor() ([]byte, []int) {
 	return file_sso_app_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *DeleteAppRequest) GetId() int64 {
+func (x *DeleteAppRequest) GetId() uint32 {
 	if x != nil {
 		return x.Id
 	}
@@ -531,7 +531,7 @@ func (*DeleteAppResponse) Descriptor() ([]byte, []int) {
 
 type ChangeStatusAppRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            uint32                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -566,7 +566,7 @@ func (*ChangeStatusAppRequest) Descriptor() ([]byte, []int) {
 	return file_sso_app_proto_rawDescGZIP(), []int{11}
 }
 
-func (x *ChangeStatusAppRequest) GetId() int64 {
+func (x *ChangeStatusAppRequest) GetId() uint32 {
 	if x != nil {
 		return x.Id
 	}
@@ -611,7 +611,7 @@ func (*ChangeStatusAppResponse) Descriptor() ([]byte, []int) {
 
 type IsAdminRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        uint32                 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -646,7 +646,7 @@ func (*IsAdminRequest) Descriptor() ([]byte, []int) {
 	return file_sso_app_proto_rawDescGZIP(), []int{13}
 }
 
-func (x *IsAdminRequest) GetUserId() int64 {
+func (x *IsAdminRequest) GetUserId() uint32 {
 	if x != nil {
 		return x.UserId
 	}
@@ -699,7 +699,7 @@ func (x *IsAdminResponse) GetIsAdmin() bool {
 
 type AddAdminRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        uint32                 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -734,7 +734,7 @@ func (*AddAdminRequest) Descriptor() ([]byte, []int) {
 	return file_sso_app_proto_rawDescGZIP(), []int{15}
 }
 
-func (x *AddAdminRequest) GetUserId() int64 {
+func (x *AddAdminRequest) GetUserId() uint32 {
 	if x != nil {
 		return x.UserId
 	}
@@ -779,7 +779,7 @@ func (*AddAdminResponse) Descriptor() ([]byte, []int) {
 
 type RemoveAdminRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        uint32                 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -814,7 +814,7 @@ func (*RemoveAdminRequest) Descriptor() ([]byte, []int) {
 	return file_sso_app_proto_rawDescGZIP(), []int{17}
 }
 
-func (x *RemoveAdminRequest) GetUserId() int64 {
+func (x *RemoveAdminRequest) GetUserId() uint32 {
 	if x != nil {
 		return x.UserId
 	}
@@ -863,12 +863,12 @@ const file_sso_app_proto_rawDesc = "" +
 	"\n" +
 	"\rsso/app.proto\x12\x04auth\"`\n" +
 	"\bAppModel\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x12\n" +
+	"\x02id\x18\x01 \x01(\rR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
 	"\x04link\x18\x03 \x01(\tR\x04link\x12\x1c\n" +
 	"\tisenabled\x18\x04 \x01(\bR\tisenabled\"\x1f\n" +
 	"\rGetAppRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x03R\x02id\"2\n" +
+	"\x02id\x18\x01 \x01(\rR\x02id\"2\n" +
 	"\x0eGetAppResponse\x12 \n" +
 	"\x03app\x18\x01 \x01(\v2\x0e.auth.AppModelR\x03app\"\x13\n" +
 	"\x11GetAllAppsRequest\"8\n" +
@@ -880,25 +880,25 @@ const file_sso_app_proto_rawDesc = "" +
 	"\x11CreateAppResponse\x12 \n" +
 	"\x03app\x18\x01 \x01(\v2\x0e.auth.AppModelR\x03app\"J\n" +
 	"\x10UpdateAppRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x12\n" +
+	"\x02id\x18\x01 \x01(\rR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
 	"\x04link\x18\x03 \x01(\tR\x04link\"\x13\n" +
 	"\x11UpdateAppResponse\"\"\n" +
 	"\x10DeleteAppRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x03R\x02id\"\x13\n" +
+	"\x02id\x18\x01 \x01(\rR\x02id\"\x13\n" +
 	"\x11DeleteAppResponse\"(\n" +
 	"\x16ChangeStatusAppRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x03R\x02id\"\x19\n" +
+	"\x02id\x18\x01 \x01(\rR\x02id\"\x19\n" +
 	"\x17ChangeStatusAppResponse\")\n" +
 	"\x0eIsAdminRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\x03R\x06userId\",\n" +
+	"\auser_id\x18\x01 \x01(\rR\x06userId\",\n" +
 	"\x0fIsAdminResponse\x12\x19\n" +
 	"\bis_admin\x18\x01 \x01(\bR\aisAdmin\"*\n" +
 	"\x0fAddAdminRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\x03R\x06userId\"\x12\n" +
+	"\auser_id\x18\x01 \x01(\rR\x06userId\"\x12\n" +
 	"\x10AddAdminResponse\"-\n" +
 	"\x12RemoveAdminRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\x03R\x06userId\"\x15\n" +
+	"\auser_id\x18\x01 \x01(\rR\x06userId\"\x15\n" +
 	"\x13RemoveAdminResponse2\xbc\x04\n" +
 	"\x03App\x123\n" +
 	"\x06GetApp\x12\x13.auth.GetAppRequest\x1a\x14.auth.GetAppResponse\x12?\n" +
@@ -910,7 +910,7 @@ const file_sso_app_proto_rawDesc = "" +
 	"\x0fChangeStatusApp\x12\x1c.auth.ChangeStatusAppRequest\x1a\x1d.auth.ChangeStatusAppResponse\x126\n" +
 	"\aIsAdmin\x12\x14.auth.IsAdminRequest\x1a\x15.auth.IsAdminResponse\x129\n" +
 	"\bAddAdmin\x12\x15.auth.AddAdminRequest\x1a\x16.auth.AddAdminResponse\x12B\n" +
-	"\vRemoveAdmin\x12\x18.auth.RemoveAdminRequest\x1a\x19.auth.RemoveAdminResponseB\x16Z\x14nergous.sso.v1;ssov1b\x06proto3"
+	"\vRemoveAdmin\x12\x18.auth.RemoveAdminRequest\x1a\x19.auth.RemoveAdminResponseB\x16Z\x14nergous.sso.v2;ssov2b\x06proto3"
 
 var (
 	file_sso_app_proto_rawDescOnce sync.Once

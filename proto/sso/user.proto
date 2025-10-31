@@ -12,7 +12,7 @@ service User {
 }
 
 message UserInfoRequest {
-    int64 user_id = 1;
+    uint32 user_id = 1;
 }
 
 message UserInfoResponse {
@@ -27,14 +27,14 @@ message  GetAllUsersResponse {
 }
 
 message UserModel {
-    int64 id = 1;
+    uint32 id = 1;
     string email = 2;
     string steam_url = 3;
     string path_to_photo = 4;
 }
 
 message UpdateUserRequest {
-    int64 id = 1;
+    uint32 id = 1;
     string email = 2;
     string password = 3;
     string steam_url = 4;
@@ -43,7 +43,7 @@ message UpdateUserRequest {
 message UpdateUserResponse {}
 
 message DeleteUserRequest {
-    int64 id = 1;
+    uint32 id = 1;
 }
 
 message DeleteUserResponse {}

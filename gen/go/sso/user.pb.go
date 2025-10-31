@@ -4,7 +4,7 @@
 // 	protoc        v6.30.2
 // source: sso/user.proto
 
-package ssov1
+package ssov2
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -23,7 +23,7 @@ const (
 
 type UserInfoRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        uint32                 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -58,7 +58,7 @@ func (*UserInfoRequest) Descriptor() ([]byte, []int) {
 	return file_sso_user_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *UserInfoRequest) GetUserId() int64 {
+func (x *UserInfoRequest) GetUserId() uint32 {
 	if x != nil {
 		return x.UserId
 	}
@@ -207,7 +207,7 @@ func (x *GetAllUsersResponse) GetUser() []*UserModel {
 
 type UserModel struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            uint32                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
 	SteamUrl      string                 `protobuf:"bytes,3,opt,name=steam_url,json=steamUrl,proto3" json:"steam_url,omitempty"`
 	PathToPhoto   string                 `protobuf:"bytes,4,opt,name=path_to_photo,json=pathToPhoto,proto3" json:"path_to_photo,omitempty"`
@@ -245,7 +245,7 @@ func (*UserModel) Descriptor() ([]byte, []int) {
 	return file_sso_user_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *UserModel) GetId() int64 {
+func (x *UserModel) GetId() uint32 {
 	if x != nil {
 		return x.Id
 	}
@@ -275,7 +275,7 @@ func (x *UserModel) GetPathToPhoto() string {
 
 type UpdateUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            uint32                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
 	Password      string                 `protobuf:"bytes,3,opt,name=password,proto3" json:"password,omitempty"`
 	SteamUrl      string                 `protobuf:"bytes,4,opt,name=steam_url,json=steamUrl,proto3" json:"steam_url,omitempty"`
@@ -314,7 +314,7 @@ func (*UpdateUserRequest) Descriptor() ([]byte, []int) {
 	return file_sso_user_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *UpdateUserRequest) GetId() int64 {
+func (x *UpdateUserRequest) GetId() uint32 {
 	if x != nil {
 		return x.Id
 	}
@@ -387,7 +387,7 @@ func (*UpdateUserResponse) Descriptor() ([]byte, []int) {
 
 type DeleteUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            uint32                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -422,7 +422,7 @@ func (*DeleteUserRequest) Descriptor() ([]byte, []int) {
 	return file_sso_user_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *DeleteUserRequest) GetId() int64 {
+func (x *DeleteUserRequest) GetId() uint32 {
 	if x != nil {
 		return x.Id
 	}
@@ -471,7 +471,7 @@ const file_sso_user_proto_rawDesc = "" +
 	"\n" +
 	"\x0esso/user.proto\x12\x04auth\"*\n" +
 	"\x0fUserInfoRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\x03R\x06userId\"i\n" +
+	"\auser_id\x18\x01 \x01(\rR\x06userId\"i\n" +
 	"\x10UserInfoResponse\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1b\n" +
 	"\tsteam_url\x18\x02 \x01(\tR\bsteamUrl\x12\"\n" +
@@ -480,19 +480,19 @@ const file_sso_user_proto_rawDesc = "" +
 	"\x13GetAllUsersResponse\x12#\n" +
 	"\x04user\x18\x01 \x03(\v2\x0f.auth.UserModelR\x04user\"r\n" +
 	"\tUserModel\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x14\n" +
+	"\x02id\x18\x01 \x01(\rR\x02id\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12\x1b\n" +
 	"\tsteam_url\x18\x03 \x01(\tR\bsteamUrl\x12\"\n" +
 	"\rpath_to_photo\x18\x04 \x01(\tR\vpathToPhoto\"\x96\x01\n" +
 	"\x11UpdateUserRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x14\n" +
+	"\x02id\x18\x01 \x01(\rR\x02id\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12\x1a\n" +
 	"\bpassword\x18\x03 \x01(\tR\bpassword\x12\x1b\n" +
 	"\tsteam_url\x18\x04 \x01(\tR\bsteamUrl\x12\"\n" +
 	"\rpath_to_photo\x18\x05 \x01(\tR\vpathToPhoto\"\x14\n" +
 	"\x12UpdateUserResponse\"#\n" +
 	"\x11DeleteUserRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x03R\x02id\"\x14\n" +
+	"\x02id\x18\x01 \x01(\rR\x02id\"\x14\n" +
 	"\x12DeleteUserResponse2\x87\x02\n" +
 	"\x04User\x129\n" +
 	"\bUserInfo\x12\x15.auth.UserInfoRequest\x1a\x16.auth.UserInfoResponse\x12B\n" +
@@ -500,7 +500,7 @@ const file_sso_user_proto_rawDesc = "" +
 	"\n" +
 	"UpdateUser\x12\x17.auth.UpdateUserRequest\x1a\x18.auth.UpdateUserResponse\x12?\n" +
 	"\n" +
-	"DeleteUser\x12\x17.auth.DeleteUserRequest\x1a\x18.auth.DeleteUserResponseB\x16Z\x14nergous.sso.v1;ssov1b\x06proto3"
+	"DeleteUser\x12\x17.auth.DeleteUserRequest\x1a\x18.auth.DeleteUserResponseB\x16Z\x14nergous.sso.v2;ssov2b\x06proto3"
 
 var (
 	file_sso_user_proto_rawDescOnce sync.Once

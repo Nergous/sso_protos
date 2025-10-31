@@ -17,14 +17,14 @@ service App {
 }
 
 message AppModel {
-    int64 id = 1;
+    uint32 id = 1;
     string name = 2;
     string link = 3;
     bool isenabled = 4;
 }
 
 message GetAppRequest {
-    int64 id = 1;
+    uint32 id = 1;
 }
 
 message GetAppResponse {
@@ -47,7 +47,7 @@ message CreateAppResponse {
 }
 
 message UpdateAppRequest {
-    int64 id = 1;
+    uint32 id = 1;
     string name = 2;
     string link = 3;
 }
@@ -55,19 +55,19 @@ message UpdateAppRequest {
 message UpdateAppResponse {}
 
 message DeleteAppRequest {
-    int64 id = 1;
+    uint32 id = 1;
 }
 
 message DeleteAppResponse {}
 
 message ChangeStatusAppRequest {
-    int64 id = 1;
+    uint32 id = 1;
 }
 
 message ChangeStatusAppResponse {}
 
 message IsAdminRequest {
-    int64 user_id = 1;
+    uint32 user_id = 1;
 }
 
 message IsAdminResponse {
@@ -75,13 +75,13 @@ message IsAdminResponse {
 }
 
 message AddAdminRequest {
-    int64 user_id = 1;
+    uint32 user_id = 1;
 }
 
 message AddAdminResponse {}
 
 message RemoveAdminRequest {
-    int64 user_id = 1;
+    uint32 user_id = 1;
 }
 
 message RemoveAdminResponse {}
