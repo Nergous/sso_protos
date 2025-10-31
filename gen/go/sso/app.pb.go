@@ -612,6 +612,7 @@ func (*ChangeStatusAppResponse) Descriptor() ([]byte, []int) {
 type IsAdminRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        uint32                 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	AppId         uint32                 `protobuf:"varint,2,opt,name=app_id,json=appId,proto3" json:"app_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -649,6 +650,13 @@ func (*IsAdminRequest) Descriptor() ([]byte, []int) {
 func (x *IsAdminRequest) GetUserId() uint32 {
 	if x != nil {
 		return x.UserId
+	}
+	return 0
+}
+
+func (x *IsAdminRequest) GetAppId() uint32 {
+	if x != nil {
+		return x.AppId
 	}
 	return 0
 }
@@ -700,6 +708,7 @@ func (x *IsAdminResponse) GetIsAdmin() bool {
 type AddAdminRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        uint32                 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	AppId         uint32                 `protobuf:"varint,2,opt,name=app_id,json=appId,proto3" json:"app_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -737,6 +746,13 @@ func (*AddAdminRequest) Descriptor() ([]byte, []int) {
 func (x *AddAdminRequest) GetUserId() uint32 {
 	if x != nil {
 		return x.UserId
+	}
+	return 0
+}
+
+func (x *AddAdminRequest) GetAppId() uint32 {
+	if x != nil {
+		return x.AppId
 	}
 	return 0
 }
@@ -780,6 +796,7 @@ func (*AddAdminResponse) Descriptor() ([]byte, []int) {
 type RemoveAdminRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        uint32                 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	AppId         uint32                 `protobuf:"varint,2,opt,name=app_id,json=appId,proto3" json:"app_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -817,6 +834,13 @@ func (*RemoveAdminRequest) Descriptor() ([]byte, []int) {
 func (x *RemoveAdminRequest) GetUserId() uint32 {
 	if x != nil {
 		return x.UserId
+	}
+	return 0
+}
+
+func (x *RemoveAdminRequest) GetAppId() uint32 {
+	if x != nil {
+		return x.AppId
 	}
 	return 0
 }
@@ -889,16 +913,19 @@ const file_sso_app_proto_rawDesc = "" +
 	"\x11DeleteAppResponse\"(\n" +
 	"\x16ChangeStatusAppRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\"\x19\n" +
-	"\x17ChangeStatusAppResponse\")\n" +
+	"\x17ChangeStatusAppResponse\"@\n" +
 	"\x0eIsAdminRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\rR\x06userId\",\n" +
+	"\auser_id\x18\x01 \x01(\rR\x06userId\x12\x15\n" +
+	"\x06app_id\x18\x02 \x01(\rR\x05appId\",\n" +
 	"\x0fIsAdminResponse\x12\x19\n" +
-	"\bis_admin\x18\x01 \x01(\bR\aisAdmin\"*\n" +
+	"\bis_admin\x18\x01 \x01(\bR\aisAdmin\"A\n" +
 	"\x0fAddAdminRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\rR\x06userId\"\x12\n" +
-	"\x10AddAdminResponse\"-\n" +
+	"\auser_id\x18\x01 \x01(\rR\x06userId\x12\x15\n" +
+	"\x06app_id\x18\x02 \x01(\rR\x05appId\"\x12\n" +
+	"\x10AddAdminResponse\"D\n" +
 	"\x12RemoveAdminRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\rR\x06userId\"\x15\n" +
+	"\auser_id\x18\x01 \x01(\rR\x06userId\x12\x15\n" +
+	"\x06app_id\x18\x02 \x01(\rR\x05appId\"\x15\n" +
 	"\x13RemoveAdminResponse2\xbc\x04\n" +
 	"\x03App\x123\n" +
 	"\x06GetApp\x12\x13.auth.GetAppRequest\x1a\x14.auth.GetAppResponse\x12?\n" +

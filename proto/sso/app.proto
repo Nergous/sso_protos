@@ -68,6 +68,7 @@ message ChangeStatusAppResponse {}
 
 message IsAdminRequest {
     uint32 user_id = 1;
+    uint32 app_id = 2;
 }
 
 message IsAdminResponse {
@@ -76,12 +77,14 @@ message IsAdminResponse {
 
 message AddAdminRequest {
     uint32 user_id = 1;
+    uint32 app_id = 2;
 }
 
 message AddAdminResponse {}
 
 message RemoveAdminRequest {
     uint32 user_id = 1;
+    uint32 app_id = 2;
 }
 
 message RemoveAdminResponse {}
