@@ -14,6 +14,7 @@ service App {
     rpc IsAdmin(IsAdminRequest) returns (IsAdminResponse);
     rpc AddAdmin(AddAdminRequest) returns (AddAdminResponse);
     rpc RemoveAdmin(RemoveAdminRequest) returns (RemoveAdminResponse);
+    rpc GetAllUsersForApp(GetAllUsersForAppRequest) returns (GetAllUsersForAppResponse);
 }
 
 message AppModel {
@@ -88,3 +89,20 @@ message RemoveAdminRequest {
 }
 
 message RemoveAdminResponse {}
+
+message GetAllUsersForAppRequest {
+    uint32 app_id = 1;
+}
+
+
+message AppUser  {
+    uint32 id = 1;
+    string email = 2;
+    string steam_url = 3;
+    string path_to_photo = 4;
+    bool is_admin = 5;
+}
+
+message GetAllUsersForAppResponse {
+    repeated AppUser users = 1;
+}
