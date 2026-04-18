@@ -6,8 +6,11 @@ option go_package = "nergous.sso.v2;ssov2";
 
 // User is the user-management service: profile lookups, listing, updates
 // and account deletion.
+//
+// Error handling: see errors.proto.
 service User {
     // UserInfo returns the profile of a single user by user_id.
+    // Possible reasons: USER_NOT_FOUND, VALIDATION_FAILED.
     rpc UserInfo(UserInfoRequest) returns (UserInfoResponse);
 
     // GetAllUsers returns every user known to the SSO service.
@@ -18,15 +21,18 @@ service User {
     // given id. Fields are `optional` in proto3 semantics — only fields that
     // are explicitly set are updated; unset fields are left untouched.
     // Password is deliberately NOT part of UpdateUser — use ChangePassword.
+    // Possible reasons: USER_NOT_FOUND, VALIDATION_FAILED.
     rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
 
     // ChangePassword rotates the user's password. The caller must present the
     // current password (`old_password`) in addition to the desired new value.
     // SECURITY: both fields are plaintext and MUST only be transmitted over
     // TLS; do not log the request.
+    // Possible reasons: USER_NOT_FOUND, PASSWORD_MISMATCH, VALIDATION_FAILED.
     rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
 
     // DeleteUser removes the user with the given id. Idempotent.
+    // Possible reasons: VALIDATION_FAILED.
     rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
 }
 

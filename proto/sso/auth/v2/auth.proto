@@ -7,22 +7,32 @@ option go_package = "nergous.sso.v2;ssov2";
 // Auth is the authentication service of the nergous.ru SSO platform.
 // It covers user registration, credential-based sign-in, session termination
 // and token lifecycle management (refresh, validation).
+//
+// Error handling: see errors.proto. All RPCs below return standard gRPC
+// statuses with a `google.rpc.ErrorInfo` detail whose `reason` is one of
+// the ErrorReason values listed per RPC.
 service Auth {
     // Register creates a new user account and returns its numeric identifier.
+    // Possible reasons: USER_ALREADY_EXISTS, VALIDATION_FAILED.
     rpc Register (RegisterRequest) returns (RegisterResponse);
 
     // Login authenticates a user by email + password in the context of a
     // specific app_id and returns an access/refresh token pair.
+    // Possible reasons: INVALID_CREDENTIALS, APP_NOT_FOUND, VALIDATION_FAILED.
     rpc Login (LoginRequest) returns (LoginResponse);
 
     // Logout invalidates the caller's access token. Idempotent.
+    // Possible reasons: INVALID_TOKEN.
     rpc Logout (LogoutRequest) returns (LogoutResponse);
 
     // Refresh issues a new access/refresh token pair from a valid refresh token.
+    // Possible reasons: INVALID_TOKEN.
     rpc Refresh (RefreshRequest) returns (LoginResponse);
 
     // ValidateToken verifies an access token and returns the owning user_id
     // plus a boolean `valid` flag.
+    // Possible reasons: INVALID_TOKEN (only for malformed tokens; expired or
+    // revoked tokens return OK with valid=false).
     rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenResponse);
 }
 

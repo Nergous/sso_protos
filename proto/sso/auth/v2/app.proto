@@ -6,8 +6,11 @@ option go_package = "nergous.sso.v2;ssov2";
 
 // App manages the third-party applications registered with the SSO service
 // and the set of administrators for each of them.
+//
+// Error handling: see errors.proto.
 service App {
     // GetApp returns a single app by id.
+    // Possible reasons: APP_NOT_FOUND, VALIDATION_FAILED.
     rpc GetApp(GetAppRequest) returns (GetAppResponse);
 
     // GetAllApps returns every registered app.
@@ -15,31 +18,41 @@ service App {
     rpc GetAllApps(GetAllAppsRequest) returns (GetAllAppsResponse);
 
     // CreateApp registers a new app and returns it.
+    // Possible reasons: APP_ALREADY_EXISTS, VALIDATION_FAILED.
     rpc CreateApp(CreateAppRequest) returns (CreateAppResponse);
 
     // UpdateApp updates the mutable fields of the app with the given id.
+    // Possible reasons: APP_NOT_FOUND, VALIDATION_FAILED.
     rpc UpdateApp(UpdateAppRequest) returns (UpdateAppResponse);
 
     // DeleteApp removes the app with the given id. Idempotent.
+    // Possible reasons: VALIDATION_FAILED.
     rpc DeleteApp(DeleteAppRequest) returns (DeleteAppResponse);
 
     // ChangeStatusApp toggles the enabled/disabled flag of an app.
+    // Possible reasons: APP_NOT_FOUND, VALIDATION_FAILED.
     rpc ChangeStatusApp(ChangeStatusAppRequest) returns (ChangeStatusAppResponse);
 
     // IsAdmin reports whether the given user is an administrator of the
     // given app.
+    // Possible reasons: USER_NOT_FOUND, APP_NOT_FOUND, VALIDATION_FAILED.
     rpc IsAdmin(IsAdminRequest) returns (IsAdminResponse);
 
     // AddAdmin grants administrator rights on the app to the user. Idempotent.
+    // Possible reasons: USER_NOT_FOUND, APP_NOT_FOUND, PERMISSION_DENIED,
+    // VALIDATION_FAILED.
     rpc AddAdmin(AddAdminRequest) returns (AddAdminResponse);
 
     // RemoveAdmin revokes administrator rights on the app from the user.
     // Idempotent.
+    // Possible reasons: USER_NOT_FOUND, APP_NOT_FOUND, PERMISSION_DENIED,
+    // VALIDATION_FAILED.
     rpc RemoveAdmin(RemoveAdminRequest) returns (RemoveAdminResponse);
 
     // GetAllUsersForApp returns every user associated with the given app,
     // annotating each with the is_admin flag.
     // NOTE: currently unpaginated — see M1 in the architecture report.
+    // Possible reasons: APP_NOT_FOUND, VALIDATION_FAILED.
     rpc GetAllUsersForApp(GetAllUsersForAppRequest) returns (GetAllUsersForAppResponse);
 }
 
