@@ -68,9 +68,8 @@ message AppModel {
     string name = 2;
     // Entry-point URL of the app.
     string link = 3;
-    // Whether the app currently accepts logins. See L4 for planned rename
-    // to is_enabled (snake_case).
-    bool isenabled = 4;
+    // Whether the app currently accepts logins.
+    bool is_enabled = 4;
     // When the app was registered. Set by the server; ignored if sent by a
     // client.
     google.protobuf.Timestamp created_at = 5;

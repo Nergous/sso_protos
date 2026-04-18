@@ -132,7 +132,7 @@ message UpdateUserRequest {
 | `CreateApp(CreateAppRequest) → CreateAppResponse` | Создание приложения (`name`, `link`). |
 | `UpdateApp(UpdateAppRequest) → UpdateAppResponse` | Обновление приложения. |
 | `DeleteApp(DeleteAppRequest) → DeleteAppResponse` | Удаление приложения. |
-| `ChangeStatusApp(ChangeStatusAppRequest) → ChangeStatusAppResponse` | Переключение флага `isenabled`. |
+| `ChangeStatusApp(ChangeStatusAppRequest) → ChangeStatusAppResponse` | Переключение флага `is_enabled`. |
 | `IsAdmin(IsAdminRequest) → IsAdminResponse` | Проверка, является ли пользователь администратором приложения. |
 | `AddAdmin(AddAdminRequest) → AddAdminResponse` | Назначение администратора. |
 | `RemoveAdmin(RemoveAdminRequest) → RemoveAdminResponse` | Снятие прав администратора. |
@@ -145,7 +145,7 @@ message AppModel {
     uint32 id = 1;
     string name = 2;
     string link = 3;
-    bool isenabled = 4;
+    bool is_enabled = 4;
 }
 
 message AppUser {

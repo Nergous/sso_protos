@@ -4,9 +4,6 @@ modules:
 lint:
   use:
     - STANDARD
-  except:
-    # Field `isenabled` is not snake_case — tracked as L4 (breaking change).
-    - FIELD_LOWER_SNAKE_CASE
 breaking:
   use:
     - FILE
