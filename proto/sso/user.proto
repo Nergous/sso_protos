@@ -15,8 +15,16 @@ service User {
     rpc GetAllUsers(GetAllUsersRequest) returns (GetAllUsersResponse);
 
     // UpdateUser updates one or more profile fields of the user with the
-    // given id.
+    // given id. Fields are `optional` in proto3 semantics — only fields that
+    // are explicitly set are updated; unset fields are left untouched.
+    // Password is deliberately NOT part of UpdateUser — use ChangePassword.
     rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
+
+    // ChangePassword rotates the user's password. The caller must present the
+    // current password (`old_password`) in addition to the desired new value.
+    // SECURITY: both fields are plaintext and MUST only be transmitted over
+    // TLS; do not log the request.
+    rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
 
     // DeleteUser removes the user with the given id. Idempotent.
     rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
@@ -60,23 +68,38 @@ message UserModel {
 }
 
 // UpdateUserRequest carries the new values of the fields being updated.
-// Fields left unset are currently written as empty — see H3 in the
-// architecture report for the planned FieldMask migration.
+// All optional fields distinguish "unset" (do not touch) from "set to empty".
+// Field number 3 is reserved — previously held `password`, now handled by
+// ChangePassword.
 message UpdateUserRequest {
     // Identifier of the user to update.
     uint32 id = 1;
-    // New email.
-    string email = 2;
-    // New plaintext password. MUST be transmitted over TLS only — do not log.
-    string password = 3;
-    // New Steam profile URL.
-    string steam_url = 4;
-    // New avatar path/URL.
-    string path_to_photo = 5;
+    // New email. Unset = leave current value unchanged.
+    optional string email = 2;
+    reserved 3;
+    reserved "password";
+    // New Steam profile URL. Unset = leave current value unchanged.
+    optional string steam_url = 4;
+    // New avatar path/URL. Unset = leave current value unchanged.
+    optional string path_to_photo = 5;
 }
 
 // UpdateUserResponse is intentionally empty.
 message UpdateUserResponse {}
+
+// ChangePasswordRequest carries the old and new passwords for the given user.
+// SECURITY: plaintext — TLS-only, never log.
+message ChangePasswordRequest {
+    // Identifier of the user whose password is being changed.
+    uint32 user_id = 1;
+    // Current password. Required so the server can authenticate the request.
+    string old_password = 2;
+    // Desired new password.
+    string new_password = 3;
+}
+
+// ChangePasswordResponse is intentionally empty.
+message ChangePasswordResponse {}
 
 // DeleteUserRequest identifies the user to remove.
 message DeleteUserRequest {
