@@ -4,46 +4,85 @@ package auth;
 
 option go_package = "nergous.sso.v2;ssov2";
 
+// User is the user-management service: profile lookups, listing, updates
+// and account deletion.
 service User {
+    // UserInfo returns the profile of a single user by user_id.
     rpc UserInfo(UserInfoRequest) returns (UserInfoResponse);
+
+    // GetAllUsers returns every user known to the SSO service.
+    // NOTE: currently unpaginated — see M1 in the architecture report.
     rpc GetAllUsers(GetAllUsersRequest) returns (GetAllUsersResponse);
+
+    // UpdateUser updates one or more profile fields of the user with the
+    // given id.
     rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
+
+    // DeleteUser removes the user with the given id. Idempotent.
     rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
 }
 
+// UserInfoRequest identifies the user whose profile is being requested.
 message UserInfoRequest {
+    // Identifier of the user to look up.
     uint32 user_id = 1;
 }
 
+// UserInfoResponse is the public profile of a user.
 message UserInfoResponse {
+    // User's email.
     string email = 1;
+    // Optional Steam profile URL.
     string steam_url = 2;
+    // Optional path/URL to the user's avatar.
     string path_to_photo = 3;
 }
 
+// GetAllUsersRequest is intentionally empty.
 message GetAllUsersRequest {}
+
+// GetAllUsersResponse returns the list of users.
 message  GetAllUsersResponse {
+    // Unpaginated list of users.
     repeated UserModel users = 1;
 }
 
+// UserModel is the canonical representation of a user.
 message UserModel {
+    // Numeric user identifier.
     uint32 id = 1;
+    // User's email.
     string email = 2;
+    // Optional Steam profile URL.
     string steam_url = 3;
+    // Optional path/URL to the user's avatar.
     string path_to_photo = 4;
 }
 
+// UpdateUserRequest carries the new values of the fields being updated.
+// Fields left unset are currently written as empty — see H3 in the
+// architecture report for the planned FieldMask migration.
 message UpdateUserRequest {
+    // Identifier of the user to update.
     uint32 id = 1;
+    // New email.
     string email = 2;
+    // New plaintext password. MUST be transmitted over TLS only — do not log.
     string password = 3;
+    // New Steam profile URL.
     string steam_url = 4;
+    // New avatar path/URL.
     string path_to_photo = 5;
 }
+
+// UpdateUserResponse is intentionally empty.
 message UpdateUserResponse {}
 
+// DeleteUserRequest identifies the user to remove.
 message DeleteUserRequest {
+    // Identifier of the user to delete.
     uint32 id = 1;
 }
 
+// DeleteUserResponse is intentionally empty.
 message DeleteUserResponse {}

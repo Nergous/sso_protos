@@ -4,105 +4,184 @@ package auth;
 
 option go_package = "nergous.sso.v2;ssov2";
 
+// App manages the third-party applications registered with the SSO service
+// and the set of administrators for each of them.
 service App {
+    // GetApp returns a single app by id.
     rpc GetApp(GetAppRequest) returns (GetAppResponse);
+
+    // GetAllApps returns every registered app.
+    // NOTE: currently unpaginated — see M1 in the architecture report.
     rpc GetAllApps(GetAllAppsRequest) returns (GetAllAppsResponse);
+
+    // CreateApp registers a new app and returns it.
     rpc CreateApp(CreateAppRequest) returns (CreateAppResponse);
+
+    // UpdateApp updates the mutable fields of the app with the given id.
     rpc UpdateApp(UpdateAppRequest) returns (UpdateAppResponse);
+
+    // DeleteApp removes the app with the given id. Idempotent.
     rpc DeleteApp(DeleteAppRequest) returns (DeleteAppResponse);
+
+    // ChangeStatusApp toggles the enabled/disabled flag of an app.
     rpc ChangeStatusApp(ChangeStatusAppRequest) returns (ChangeStatusAppResponse);
+
+    // IsAdmin reports whether the given user is an administrator of the
+    // given app.
     rpc IsAdmin(IsAdminRequest) returns (IsAdminResponse);
+
+    // AddAdmin grants administrator rights on the app to the user. Idempotent.
     rpc AddAdmin(AddAdminRequest) returns (AddAdminResponse);
+
+    // RemoveAdmin revokes administrator rights on the app from the user.
+    // Idempotent.
     rpc RemoveAdmin(RemoveAdminRequest) returns (RemoveAdminResponse);
+
+    // GetAllUsersForApp returns every user associated with the given app,
+    // annotating each with the is_admin flag.
+    // NOTE: currently unpaginated — see M1 in the architecture report.
     rpc GetAllUsersForApp(GetAllUsersForAppRequest) returns (GetAllUsersForAppResponse);
 }
 
+// AppModel is the canonical representation of a registered app.
 message AppModel {
+    // Numeric app identifier.
     uint32 id = 1;
+    // Human-readable name of the app.
     string name = 2;
+    // Entry-point URL of the app.
     string link = 3;
+    // Whether the app currently accepts logins. See L4 for planned rename
+    // to is_enabled (snake_case).
     bool isenabled = 4;
 }
 
+// GetAppRequest identifies the app to look up.
 message GetAppRequest {
+    // Identifier of the app.
     uint32 id = 1;
 }
 
+// GetAppResponse returns the requested app.
 message GetAppResponse {
+    // App snapshot.
     AppModel app = 1;
 }
 
+// GetAllAppsRequest is intentionally empty.
 message GetAllAppsRequest {}
 
+// GetAllAppsResponse returns the list of apps.
 message GetAllAppsResponse {
+    // Unpaginated list of apps.
     repeated AppModel apps = 1;
 }
 
+// CreateAppRequest describes the new app to register.
 message CreateAppRequest {
+    // Human-readable name of the app.
     string name = 1;
+    // Entry-point URL of the app.
     string link = 2;
 }
 
+// CreateAppResponse returns the newly created app.
 message CreateAppResponse {
+    // Snapshot of the freshly created app (including the assigned id).
     AppModel app = 1;
 }
 
+// UpdateAppRequest carries the new values of the mutable fields.
 message UpdateAppRequest {
+    // Identifier of the app to update.
     uint32 id = 1;
+    // New name.
     string name = 2;
+    // New entry-point URL.
     string link = 3;
 }
 
+// UpdateAppResponse is intentionally empty.
 message UpdateAppResponse {}
 
+// DeleteAppRequest identifies the app to remove.
 message DeleteAppRequest {
+    // Identifier of the app.
     uint32 id = 1;
 }
 
+// DeleteAppResponse is intentionally empty.
 message DeleteAppResponse {}
 
+// ChangeStatusAppRequest toggles the enabled/disabled state of the app.
 message ChangeStatusAppRequest {
+    // Identifier of the app.
     uint32 id = 1;
 }
 
+// ChangeStatusAppResponse is intentionally empty.
 message ChangeStatusAppResponse {}
 
+// IsAdminRequest asks whether a user is an admin of a specific app.
 message IsAdminRequest {
+    // Identifier of the user.
     uint32 user_id = 1;
+    // Identifier of the app.
     uint32 app_id = 2;
 }
 
+// IsAdminResponse reports the outcome of IsAdmin.
 message IsAdminResponse {
+    // True if the user has administrator rights on the app.
     bool is_admin = 1;
 }
 
+// AddAdminRequest grants admin rights on an app to a user.
 message AddAdminRequest {
+    // Identifier of the user to promote.
     uint32 user_id = 1;
+    // Identifier of the target app.
     uint32 app_id = 2;
 }
 
+// AddAdminResponse is intentionally empty.
 message AddAdminResponse {}
 
+// RemoveAdminRequest revokes admin rights on an app from a user.
 message RemoveAdminRequest {
+    // Identifier of the user to demote.
     uint32 user_id = 1;
+    // Identifier of the target app.
     uint32 app_id = 2;
 }
 
+// RemoveAdminResponse is intentionally empty.
 message RemoveAdminResponse {}
 
+// GetAllUsersForAppRequest scopes the listing to a specific app.
 message GetAllUsersForAppRequest {
+    // Identifier of the app whose users should be listed.
     uint32 app_id = 1;
 }
 
 
+// AppUser is a user projection that also carries the is_admin flag for the
+// app in whose context it was fetched.
 message AppUser  {
+    // Numeric user identifier.
     uint32 id = 1;
+    // User's email.
     string email = 2;
+    // Optional Steam profile URL.
     string steam_url = 3;
+    // Optional path/URL to the user's avatar.
     string path_to_photo = 4;
+    // True if the user is an administrator of the scoping app.
     bool is_admin = 5;
 }
 
+// GetAllUsersForAppResponse returns the list of users for the scoping app.
 message GetAllUsersForAppResponse {
+    // Unpaginated list of users, each with an is_admin flag.
     repeated AppUser users = 1;
 }
