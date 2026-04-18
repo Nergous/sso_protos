@@ -28,3 +28,20 @@ jobs:
 
       - name: go vet
         run: go vet ./...
+
+  buf:
+    name: Buf lint & breaking
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: bufbuild/buf-setup-action@v1
+
+      - name: buf lint
+        run: buf lint
+
+      - name: buf breaking
+        if: github.event_name == 'pull_request'
+        run: buf breaking --against "${{ github.event.pull_request.base.repo.clone_url }}#branch=${{ github.event.pull_request.base.ref }}"
