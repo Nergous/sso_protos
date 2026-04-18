@@ -19,11 +19,15 @@ import ssov2 "github.com/Nergous/sso_protos/gen/go/sso"
 ## Структура
 
 ```
-proto/sso/
+proto/sso/auth/v2/
 ├── auth.proto   — аутентификация (регистрация, логин, токены)
 ├── user.proto   — управление пользователями
 └── app.proto    — управление приложениями и правами администраторов
 ```
+
+Все файлы объявлены в пакете `sso.auth.v2` (buf-style layout). Следующее
+мажорное изменение контракта переедет в `sso/auth/v3/` без влияния на
+существующих клиентов v2.
 
 Сгенерированный Go-код находится в [gen/go/sso/](gen/go/sso/).
 
@@ -38,18 +42,18 @@ task gen
 Эквивалентная команда:
 
 ```bash
-protoc -I proto proto/sso/*.proto \
+protoc -I proto proto/sso/auth/v2/*.proto \
   --go_out=./gen/go/ --go_opt=paths=source_relative \
   --go-grpc_out=./gen/go/ --go-grpc_opt=paths=source_relative
 ```
 
 ## Сервисы
 
-Все сервисы объявлены в пакете `auth` с `go_package = "nergous.sso.v2;ssov2"`.
+Все сервисы объявлены в пакете `sso.auth.v2` с `go_package = "nergous.sso.v2;ssov2"`.
 
 ---
 
-### Auth ([auth.proto](proto/sso/auth.proto))
+### Auth ([auth.proto](proto/sso/auth/v2/auth.proto))
 
 Сервис аутентификации и работы с токенами.
 
@@ -85,7 +89,7 @@ message LoginResponse {
 
 ---
 
-### User ([user.proto](proto/sso/user.proto))
+### User ([user.proto](proto/sso/auth/v2/user.proto))
 
 Управление учётными записями пользователей.
 
@@ -117,7 +121,7 @@ message UpdateUserRequest {
 
 ---
 
-### App ([app.proto](proto/sso/app.proto))
+### App ([app.proto](proto/sso/auth/v2/app.proto))
 
 Управление приложениями, входящими в экосистему SSO, и правами администраторов.
 
@@ -128,7 +132,7 @@ message UpdateUserRequest {
 | `CreateApp(CreateAppRequest) → CreateAppResponse` | Создание приложения (`name`, `link`). |
 | `UpdateApp(UpdateAppRequest) → UpdateAppResponse` | Обновление приложения. |
 | `DeleteApp(DeleteAppRequest) → DeleteAppResponse` | Удаление приложения. |
-| `ChangeStatusApp(ChangeStatusAppRequest) → ChangeStatusAppResponse` | Переключение флага `isenabled`. |
+| `ChangeStatusApp(ChangeStatusAppRequest) → ChangeStatusAppResponse` | Переключение флага `is_enabled`. |
 | `IsAdmin(IsAdminRequest) → IsAdminResponse` | Проверка, является ли пользователь администратором приложения. |
 | `AddAdmin(AddAdminRequest) → AddAdminResponse` | Назначение администратора. |
 | `RemoveAdmin(RemoveAdminRequest) → RemoveAdminResponse` | Снятие прав администратора. |
@@ -141,7 +145,7 @@ message AppModel {
     uint32 id = 1;
     string name = 2;
     string link = 3;
-    bool isenabled = 4;
+    bool is_enabled = 4;
 }
 
 message AppUser {
@@ -156,6 +160,28 @@ message AppUser {
 ## Требования
 
 - Go 1.23.4+
-- `protoc` с плагинами `protoc-gen-go` и `protoc-gen-go-grpc`
+- `protoc` с плагинами `protoc-gen-go` и `protoc-gen-go-grpc`, либо
+  [`buf`](https://buf.build/docs/installation) (предпочтительно — см.
+  `Taskfile.yaml`)
 - google.golang.org/grpc v1.73.0
 - google.golang.org/protobuf v1.36.10
+
+## Таблица совместимости версий
+
+Матрица «версия proto-контракта × версия gRPC-библиотеки × минимально
+поддерживаемая версия Go и сервера SSO». Клиентам рекомендуется подбирать
+строку, соответствующую используемому тегу `sso_protos`.
+
+| Тег `sso_protos` | Proto-пакет    | gRPC (Go) | `google.golang.org/protobuf` | Go       | SSO-сервер |
+|------------------|----------------|-----------|------------------------------|----------|------------|
+| v2.x (current)   | `sso.auth.v2`  | ≥ 1.73.0  | ≥ 1.36.10                    | ≥ 1.23.4 | ≥ 2.0.0    |
+| v1.x (legacy)    | `auth`         | ≥ 1.60.0  | ≥ 1.33.0                     | ≥ 1.21   | 1.x        |
+
+Правила совместимости:
+
+- В рамках одной мажорной версии (`v2.x`) изменения контракта строго
+  обратно совместимы — добавляются только новые поля/RPC, типы и номера
+  существующих полей не меняются. Это гарантируется `buf breaking` в CI.
+- Мажорное изменение контракта (например, `v3`) переедет в
+  `proto/sso/auth/v3/` и получит свой `go_package`, не ломая клиентов
+  предыдущей версии.

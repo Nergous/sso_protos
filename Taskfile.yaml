@@ -4,6 +4,21 @@ tasks:
     generate:
         aliases:
             - gen
-        desc: "Generate code from proto files"
+        desc: "Generate code from proto files via buf"
         cmds:
-            - protoc -I proto proto/sso/*.proto --go_out=./gen/go/ --go_opt=paths=source_relative --go-grpc_out=./gen/go/ --go-grpc_opt=paths=source_relative
+            - buf generate
+
+    lint:
+        desc: "Lint proto files via buf"
+        cmds:
+            - buf lint
+
+    breaking:
+        desc: "Check for breaking changes against main"
+        cmds:
+            - buf breaking --against '.git#branch=main'
+
+    generate-protoc:
+        desc: "Fallback generator using protoc directly"
+        cmds:
+            - protoc -I proto proto/sso/auth/v2/*.proto --go_out=./gen/go/ --go_opt=paths=source_relative --go-grpc_out=./gen/go/ --go-grpc_opt=paths=source_relative

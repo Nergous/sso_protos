@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package sso.auth.v2;
+
+option go_package = "nergous.sso.v2;ssov2";
+
+// Error handling conventions
+// =========================
+//
+// All SSO RPCs return errors using the standard gRPC status model:
+// - A `grpc.Status` code (e.g. INVALID_ARGUMENT, NOT_FOUND, UNAUTHENTICATED).
+// - A human-readable `message` suitable for logs.
+// - An optional list of `details` messages providing machine-readable context.
+//
+// Servers SHOULD attach one `google.rpc.ErrorInfo` (with `reason` set to one
+// of the ErrorReason values below and `domain = "sso.nergous.ru"`) and, for
+// validation errors, one `google.rpc.BadRequest` describing the offending
+// fields. Clients SHOULD switch on `ErrorInfo.reason` rather than parsing
+// the message string.
+//
+// The exhaustive list of possible reasons per RPC is documented here.
+
+// ErrorReason enumerates the machine-readable reasons returned by the SSO
+// service in the `google.rpc.ErrorInfo.reason` field. Values are stable:
+// once assigned, a name/number pair MUST NOT be reused for a different
+// semantic meaning.
+enum ErrorReason {
+    // Default. MUST NOT be used explicitly.
+    ERROR_REASON_UNSPECIFIED = 0;
+
+    // Credentials did not match any known user. Used by Login.
+    // Maps to gRPC status UNAUTHENTICATED.
+    ERROR_REASON_INVALID_CREDENTIALS = 1;
+
+    // The supplied token is expired, malformed, revoked, or otherwise
+    // invalid. Used by Logout/Refresh/ValidateToken.
+    // Maps to gRPC status UNAUTHENTICATED.
+    ERROR_REASON_INVALID_TOKEN = 2;
+
+    // A user with the supplied email already exists. Used by Register.
+    // Maps to gRPC status ALREADY_EXISTS.
+    ERROR_REASON_USER_ALREADY_EXISTS = 3;
+
+    // No user matches the requested id. Used by UserInfo/UpdateUser/...
+    // Maps to gRPC status NOT_FOUND.
+    ERROR_REASON_USER_NOT_FOUND = 4;
+
+    // No app matches the requested id. Used by GetApp/UpdateApp/...
+    // Maps to gRPC status NOT_FOUND.
+    ERROR_REASON_APP_NOT_FOUND = 5;
+
+    // An app with the supplied name/link already exists. Used by CreateApp.
+    // Maps to gRPC status ALREADY_EXISTS.
+    ERROR_REASON_APP_ALREADY_EXISTS = 6;
+
+    // The caller does not have permission for the requested operation
+    // (for example, AddAdmin without admin rights).
+    // Maps to gRPC status PERMISSION_DENIED.
+    ERROR_REASON_PERMISSION_DENIED = 7;
+
+    // One or more request fields failed validation. The accompanying
+    // google.rpc.BadRequest enumerates the offending fields.
+    // Maps to gRPC status INVALID_ARGUMENT.
+    ERROR_REASON_VALIDATION_FAILED = 8;
+
+    // The old password supplied to ChangePassword does not match.
+    // Maps to gRPC status UNAUTHENTICATED.
+    ERROR_REASON_PASSWORD_MISMATCH = 9;
+}

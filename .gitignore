@@ -1,0 +1,27 @@
+# Editor / IDE
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp / build
+tmp/
+dist/
+build/
+*.log
+
+# Go
+*.test
+*.out
+coverage.txt
+vendor/
+
+# Local overrides
+.env
+.env.local
