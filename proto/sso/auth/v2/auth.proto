@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package auth;
+package sso.auth.v2;
 
 option go_package = "nergous.sso.v2;ssov2";
 

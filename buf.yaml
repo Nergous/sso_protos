@@ -5,9 +5,6 @@ lint:
   use:
     - STANDARD
   except:
-    # Package does not yet match the buf-style sso.v2 layout — tracked as H4.
-    - PACKAGE_VERSION_SUFFIX
-    - PACKAGE_DIRECTORY_MATCH
     # Field `isenabled` is not snake_case — tracked as L4 (breaking change).
     - FIELD_LOWER_SNAKE_CASE
 breaking:

@@ -19,11 +19,15 @@ import ssov2 "github.com/Nergous/sso_protos/gen/go/sso"
 ## Структура
 
 ```
-proto/sso/
+proto/sso/auth/v2/
 ├── auth.proto   — аутентификация (регистрация, логин, токены)
 ├── user.proto   — управление пользователями
 └── app.proto    — управление приложениями и правами администраторов
 ```
+
+Все файлы объявлены в пакете `sso.auth.v2` (buf-style layout). Следующее
+мажорное изменение контракта переедет в `sso/auth/v3/` без влияния на
+существующих клиентов v2.
 
 Сгенерированный Go-код находится в [gen/go/sso/](gen/go/sso/).
 
@@ -38,18 +42,18 @@ task gen
 Эквивалентная команда:
 
 ```bash
-protoc -I proto proto/sso/*.proto \
+protoc -I proto proto/sso/auth/v2/*.proto \
   --go_out=./gen/go/ --go_opt=paths=source_relative \
   --go-grpc_out=./gen/go/ --go-grpc_opt=paths=source_relative
 ```
 
 ## Сервисы
 
-Все сервисы объявлены в пакете `auth` с `go_package = "nergous.sso.v2;ssov2"`.
+Все сервисы объявлены в пакете `sso.auth.v2` с `go_package = "nergous.sso.v2;ssov2"`.
 
 ---
 
-### Auth ([auth.proto](proto/sso/auth.proto))
+### Auth ([auth.proto](proto/sso/auth/v2/auth.proto))
 
 Сервис аутентификации и работы с токенами.
 
@@ -85,7 +89,7 @@ message LoginResponse {
 
 ---
 
-### User ([user.proto](proto/sso/user.proto))
+### User ([user.proto](proto/sso/auth/v2/user.proto))
 
 Управление учётными записями пользователей.
 
@@ -117,7 +121,7 @@ message UpdateUserRequest {
 
 ---
 
-### App ([app.proto](proto/sso/app.proto))
+### App ([app.proto](proto/sso/auth/v2/app.proto))
 
 Управление приложениями, входящими в экосистему SSO, и правами администраторов.
 
