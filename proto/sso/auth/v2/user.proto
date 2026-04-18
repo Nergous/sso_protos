@@ -15,8 +15,10 @@ service User {
     // Possible reasons: USER_NOT_FOUND, VALIDATION_FAILED.
     rpc UserInfo(UserInfoRequest) returns (UserInfoResponse);
 
-    // GetAllUsers returns every user known to the SSO service.
-    // NOTE: currently unpaginated — see M1 in the architecture report.
+    // GetAllUsers returns a page of users. Pagination follows AIP-158:
+    // callers set `page_size` and optionally `page_token` from a previous
+    // response's `next_page_token`. An empty `next_page_token` marks the
+    // end of the list.
     rpc GetAllUsers(GetAllUsersRequest) returns (GetAllUsersResponse);
 
     // UpdateUser updates one or more profile fields of the user with the
@@ -54,13 +56,25 @@ message UserInfoResponse {
     string path_to_photo = 3;
 }
 
-// GetAllUsersRequest is intentionally empty.
-message GetAllUsersRequest {}
+// GetAllUsersRequest requests a page of users.
+message GetAllUsersRequest {
+    // Maximum number of items to return. Server may return fewer. If 0 the
+    // server picks a sensible default. Values > 1000 are clamped to 1000.
+    int32 page_size = 1 [
+        (buf.validate.field).int32.gte = 0,
+        (buf.validate.field).int32.lte = 1000
+    ];
+    // Opaque token from the previous response's `next_page_token`. Empty on
+    // the first page.
+    string page_token = 2;
+}
 
-// GetAllUsersResponse returns the list of users.
+// GetAllUsersResponse returns one page of users.
 message  GetAllUsersResponse {
-    // Unpaginated list of users.
+    // Page of users.
     repeated UserModel users = 1;
+    // Opaque token to fetch the next page. Empty if this was the last page.
+    string next_page_token = 2;
 }
 
 // UserModel is the canonical representation of a user.

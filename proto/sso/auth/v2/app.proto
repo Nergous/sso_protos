@@ -15,8 +15,8 @@ service App {
     // Possible reasons: APP_NOT_FOUND, VALIDATION_FAILED.
     rpc GetApp(GetAppRequest) returns (GetAppResponse);
 
-    // GetAllApps returns every registered app.
-    // NOTE: currently unpaginated — see M1 in the architecture report.
+    // GetAllApps returns a page of apps. Pagination follows AIP-158 (see
+    // GetAllUsers).
     rpc GetAllApps(GetAllAppsRequest) returns (GetAllAppsResponse);
 
     // CreateApp registers a new app and returns it.
@@ -51,9 +51,9 @@ service App {
     // VALIDATION_FAILED.
     rpc RemoveAdmin(RemoveAdminRequest) returns (RemoveAdminResponse);
 
-    // GetAllUsersForApp returns every user associated with the given app,
-    // annotating each with the is_admin flag.
-    // NOTE: currently unpaginated — see M1 in the architecture report.
+    // GetAllUsersForApp returns a page of users associated with the given
+    // app, annotating each with the is_admin flag. Pagination follows
+    // AIP-158 (see GetAllUsers).
     // Possible reasons: APP_NOT_FOUND, VALIDATION_FAILED.
     rpc GetAllUsersForApp(GetAllUsersForAppRequest) returns (GetAllUsersForAppResponse);
 }
@@ -83,13 +83,23 @@ message GetAppResponse {
     AppModel app = 1;
 }
 
-// GetAllAppsRequest is intentionally empty.
-message GetAllAppsRequest {}
+// GetAllAppsRequest requests a page of apps.
+message GetAllAppsRequest {
+    // Maximum number of items to return. See GetAllUsersRequest.page_size.
+    int32 page_size = 1 [
+        (buf.validate.field).int32.gte = 0,
+        (buf.validate.field).int32.lte = 1000
+    ];
+    // Opaque pagination token. See GetAllUsersRequest.page_token.
+    string page_token = 2;
+}
 
-// GetAllAppsResponse returns the list of apps.
+// GetAllAppsResponse returns one page of apps.
 message GetAllAppsResponse {
-    // Unpaginated list of apps.
+    // Page of apps.
     repeated AppModel apps = 1;
+    // Opaque token to fetch the next page. Empty if this was the last page.
+    string next_page_token = 2;
 }
 
 // CreateAppRequest describes the new app to register.
@@ -183,6 +193,13 @@ message RemoveAdminResponse {}
 message GetAllUsersForAppRequest {
     // Identifier of the app whose users should be listed.
     uint32 app_id = 1 [(buf.validate.field).uint32.gt = 0];
+    // Maximum number of items to return. See GetAllUsersRequest.page_size.
+    int32 page_size = 2 [
+        (buf.validate.field).int32.gte = 0,
+        (buf.validate.field).int32.lte = 1000
+    ];
+    // Opaque pagination token. See GetAllUsersRequest.page_token.
+    string page_token = 3;
 }
 
 
@@ -201,8 +218,10 @@ message AppUser  {
     bool is_admin = 5;
 }
 
-// GetAllUsersForAppResponse returns the list of users for the scoping app.
+// GetAllUsersForAppResponse returns one page of users for the scoping app.
 message GetAllUsersForAppResponse {
-    // Unpaginated list of users, each with an is_admin flag.
+    // Page of users, each with an is_admin flag.
     repeated AppUser users = 1;
+    // Opaque token to fetch the next page. Empty if this was the last page.
+    string next_page_token = 2;
 }
