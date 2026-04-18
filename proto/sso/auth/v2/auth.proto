@@ -3,6 +3,7 @@ syntax = "proto3";
 package sso.auth.v2;
 
 import "buf/validate/validate.proto";
+import "google/protobuf/empty.proto";
 
 option go_package = "nergous.sso.v2;ssov2";
 
@@ -25,7 +26,7 @@ service Auth {
 
     // Logout invalidates the caller's access token. Idempotent.
     // Possible reasons: INVALID_TOKEN.
-    rpc Logout (LogoutRequest) returns (LogoutResponse);
+    rpc Logout (LogoutRequest) returns (google.protobuf.Empty);
 
     // Refresh issues a new access/refresh token pair from a valid refresh token.
     // Possible reasons: INVALID_TOKEN.
@@ -82,9 +83,6 @@ message LogoutRequest {
     // Access token to invalidate.
     string token = 1 [(buf.validate.field).string.min_len = 1];
 }
-
-// LogoutResponse is intentionally empty.
-message LogoutResponse {}
 
 // RefreshRequest trades a refresh token for a new access/refresh pair.
 message RefreshRequest {

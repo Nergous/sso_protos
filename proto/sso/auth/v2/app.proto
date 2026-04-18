@@ -3,6 +3,7 @@ syntax = "proto3";
 package sso.auth.v2;
 
 import "buf/validate/validate.proto";
+import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "nergous.sso.v2;ssov2";
@@ -30,11 +31,11 @@ service App {
 
     // DeleteApp removes the app with the given id. Idempotent.
     // Possible reasons: VALIDATION_FAILED.
-    rpc DeleteApp(DeleteAppRequest) returns (DeleteAppResponse);
+    rpc DeleteApp(DeleteAppRequest) returns (google.protobuf.Empty);
 
     // ChangeStatusApp toggles the enabled/disabled flag of an app.
     // Possible reasons: APP_NOT_FOUND, VALIDATION_FAILED.
-    rpc ChangeStatusApp(ChangeStatusAppRequest) returns (ChangeStatusAppResponse);
+    rpc ChangeStatusApp(ChangeStatusAppRequest) returns (google.protobuf.Empty);
 
     // IsAdmin reports whether the given user is an administrator of the
     // given app.
@@ -44,13 +45,13 @@ service App {
     // AddAdmin grants administrator rights on the app to the user. Idempotent.
     // Possible reasons: USER_NOT_FOUND, APP_NOT_FOUND, PERMISSION_DENIED,
     // VALIDATION_FAILED.
-    rpc AddAdmin(AddAdminRequest) returns (AddAdminResponse);
+    rpc AddAdmin(AddAdminRequest) returns (google.protobuf.Empty);
 
     // RemoveAdmin revokes administrator rights on the app from the user.
     // Idempotent.
     // Possible reasons: USER_NOT_FOUND, APP_NOT_FOUND, PERMISSION_DENIED,
     // VALIDATION_FAILED.
-    rpc RemoveAdmin(RemoveAdminRequest) returns (RemoveAdminResponse);
+    rpc RemoveAdmin(RemoveAdminRequest) returns (google.protobuf.Empty);
 
     // GetAllUsersForApp returns a page of users associated with the given
     // app, annotating each with the is_admin flag. Pagination follows
@@ -139,8 +140,12 @@ message UpdateAppRequest {
     string link = 3 [(buf.validate.field).string.uri = true];
 }
 
-// UpdateAppResponse is intentionally empty.
-message UpdateAppResponse {}
+// UpdateAppResponse returns the updated app so clients can refresh their
+// local state without a follow-up GetApp call.
+message UpdateAppResponse {
+    // Snapshot of the app after the update was applied.
+    AppModel app = 1;
+}
 
 // DeleteAppRequest identifies the app to remove.
 message DeleteAppRequest {
@@ -148,17 +153,11 @@ message DeleteAppRequest {
     uint32 id = 1 [(buf.validate.field).uint32.gt = 0];
 }
 
-// DeleteAppResponse is intentionally empty.
-message DeleteAppResponse {}
-
 // ChangeStatusAppRequest toggles the enabled/disabled state of the app.
 message ChangeStatusAppRequest {
     // Identifier of the app.
     uint32 id = 1 [(buf.validate.field).uint32.gt = 0];
 }
-
-// ChangeStatusAppResponse is intentionally empty.
-message ChangeStatusAppResponse {}
 
 // IsAdminRequest asks whether a user is an admin of a specific app.
 message IsAdminRequest {
@@ -182,9 +181,6 @@ message AddAdminRequest {
     uint32 app_id = 2 [(buf.validate.field).uint32.gt = 0];
 }
 
-// AddAdminResponse is intentionally empty.
-message AddAdminResponse {}
-
 // RemoveAdminRequest revokes admin rights on an app from a user.
 message RemoveAdminRequest {
     // Identifier of the user to demote.
@@ -192,9 +188,6 @@ message RemoveAdminRequest {
     // Identifier of the target app.
     uint32 app_id = 2 [(buf.validate.field).uint32.gt = 0];
 }
-
-// RemoveAdminResponse is intentionally empty.
-message RemoveAdminResponse {}
 
 // GetAllUsersForAppRequest scopes the listing to a specific app.
 message GetAllUsersForAppRequest {
