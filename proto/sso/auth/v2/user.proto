@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package sso.auth.v2;
 
+import "buf/validate/validate.proto";
+
 option go_package = "nergous.sso.v2;ssov2";
 
 // User is the user-management service: profile lookups, listing, updates
@@ -39,7 +41,7 @@ service User {
 // UserInfoRequest identifies the user whose profile is being requested.
 message UserInfoRequest {
     // Identifier of the user to look up.
-    uint32 user_id = 1;
+    uint32 user_id = 1 [(buf.validate.field).uint32.gt = 0];
 }
 
 // UserInfoResponse is the public profile of a user.
@@ -79,15 +81,15 @@ message UserModel {
 // ChangePassword.
 message UpdateUserRequest {
     // Identifier of the user to update.
-    uint32 id = 1;
+    uint32 id = 1 [(buf.validate.field).uint32.gt = 0];
     // New email. Unset = leave current value unchanged.
-    optional string email = 2;
+    optional string email = 2 [(buf.validate.field).string.email = true];
     reserved 3;
     reserved "password";
     // New Steam profile URL. Unset = leave current value unchanged.
-    optional string steam_url = 4;
+    optional string steam_url = 4 [(buf.validate.field).string.uri = true];
     // New avatar path/URL. Unset = leave current value unchanged.
-    optional string path_to_photo = 5;
+    optional string path_to_photo = 5 [(buf.validate.field).string.max_len = 2048];
 }
 
 // UpdateUserResponse is intentionally empty.
@@ -97,11 +99,14 @@ message UpdateUserResponse {}
 // SECURITY: plaintext — TLS-only, never log.
 message ChangePasswordRequest {
     // Identifier of the user whose password is being changed.
-    uint32 user_id = 1;
+    uint32 user_id = 1 [(buf.validate.field).uint32.gt = 0];
     // Current password. Required so the server can authenticate the request.
-    string old_password = 2;
+    string old_password = 2 [(buf.validate.field).string.min_len = 1];
     // Desired new password.
-    string new_password = 3;
+    string new_password = 3 [
+        (buf.validate.field).string.min_len = 8,
+        (buf.validate.field).string.max_len = 128
+    ];
 }
 
 // ChangePasswordResponse is intentionally empty.
@@ -110,7 +115,7 @@ message ChangePasswordResponse {}
 // DeleteUserRequest identifies the user to remove.
 message DeleteUserRequest {
     // Identifier of the user to delete.
-    uint32 id = 1;
+    uint32 id = 1 [(buf.validate.field).uint32.gt = 0];
 }
 
 // DeleteUserResponse is intentionally empty.
