@@ -3,6 +3,7 @@ syntax = "proto3";
 package sso.auth.v2;
 
 import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
 
 option go_package = "nergous.sso.v2;ssov2";
 
@@ -69,6 +70,12 @@ message AppModel {
     // Whether the app currently accepts logins. See L4 for planned rename
     // to is_enabled (snake_case).
     bool isenabled = 4;
+    // When the app was registered. Set by the server; ignored if sent by a
+    // client.
+    google.protobuf.Timestamp created_at = 5;
+    // When the app was last updated. Set by the server; ignored if sent by
+    // a client.
+    google.protobuf.Timestamp updated_at = 6;
 }
 
 // GetAppRequest identifies the app to look up.

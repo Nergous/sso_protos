@@ -3,6 +3,7 @@ syntax = "proto3";
 package sso.auth.v2;
 
 import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
 
 option go_package = "nergous.sso.v2;ssov2";
 
@@ -87,6 +88,12 @@ message UserModel {
     string steam_url = 3;
     // Optional path/URL to the user's avatar.
     string path_to_photo = 4;
+    // When the account was created. Set by the server; ignored if sent by a
+    // client.
+    google.protobuf.Timestamp created_at = 5;
+    // When the account was last updated. Set by the server; ignored if sent
+    // by a client.
+    google.protobuf.Timestamp updated_at = 6;
 }
 
 // UpdateUserRequest carries the new values of the fields being updated.
