@@ -1,0 +1,448 @@
+syntax = "proto3";
+
+package sso.access.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "sso/roles/v1/roles.proto";
+
+option go_package = "github.com/Nergous/sso_protos/gen/go/sso/access/v1;ssoaccessv1";
+
+// ============================================================================
+// AccessService - Role Assignments & Authorization Decisions
+// ============================================================================
+// Manages the user-to-role relationship within apps:
+//   - grant / revoke role assignments
+//   - introspect which roles a user holds
+//   - answer authorization queries (does user have permission X?)
+//
+// Role definitions themselves live in RolesService. Assignments here
+// reference roles by role_id; each role already carries its app_id, so
+// for single-user operations the target app is determined by the role.
+// Bulk operations take an explicit app_id as a safety guard against
+// mixing roles from different apps in one request.
+//
+// Resource model:
+//   RoleAssignment is a (user x role) tuple with audit metadata
+//   (granted_by_user_id, granted_at). A user may hold any number of
+//   role assignments within a given app.
+//
+// Atomicity:
+//   BulkGrantRoles / BulkRemoveRoles are all-or-nothing: on any
+//   validation failure NO assignments are changed. Partial success
+//   is not supported.
+//
+// Idempotency:
+//   - GrantRoleToUser        - re-granting returns the existing assignment
+//   - RemoveRoleFromUser     - removing a non-existent assignment is a no-op
+//   - BulkGrantRoles         - same semantics per entry
+//   - BulkRemoveRoles        - same semantics per entry
+//
+// Role lifecycle & assignments:
+//   A role can be DISABLED via RolesService.DisableRole. DISABLED roles
+//   continue to appear in ListUserRoles (assignments are preserved) but
+//   do NOT contribute to CheckPermission decisions. Granting a DISABLED
+//   role fails with FAILED_PRECONDITION; removing one is allowed.
+//
+// Caching:
+//   HasRoleInApp and CheckPermission are designed as high-QPS read-only
+//   decision endpoints. Callers MAY cache results with a short TTL
+//   (30-60s typical). No cache-invalidation events are emitted -
+//   stale "allow" results may persist for up to the TTL after
+//   Revoke / DisableRole operations.
+//
+// Security:
+//   All RPCs are authenticated; access is role-based within the target app.
+//     ACCESS_READ  - HasRoleInApp, ListUserRoles, CheckPermission
+//     ACCESS_WRITE - GrantRoleToUser, RemoveRoleFromUser
+//     ACCESS_ADMIN - BulkGrantRoles, BulkRemoveRoles
+// ============================================================================
+service AccessService {
+    // HasRoleInApp checks whether a user is assigned the given role.
+    // The target app is determined by the role (role_id -> Role.app_id).
+    //
+    // Safe to cache briefly. Idempotent, side-effect-free.
+    //
+    // Errors:
+    //   NOT_FOUND         - user or role does not exist
+    //   PERMISSION_DENIED - caller lacks ACCESS_READ on the role's app
+    //   INVALID_ARGUMENT  - user_id or role_id is not a valid UUID
+    rpc HasRoleInApp(HasRoleInAppRequest) returns (HasRoleInAppResponse);
+
+    // ListUserRoles returns a paginated list of roles assigned to the
+    // user within the target app. Includes both ACTIVE and DISABLED
+    // roles - disabled roles remain assigned but are ignored at
+    // permission-check time.
+    //
+    // Errors:
+    //   NOT_FOUND         - user or app does not exist
+    //   PERMISSION_DENIED - caller lacks ACCESS_READ on the target app
+    //   INVALID_ARGUMENT  - invalid page_size / page_token / ids
+    rpc ListUserRoles(ListUserRolesRequest) returns (ListUserRolesResponse);
+
+    // GrantRoleToUser creates a role assignment for the user. The app is
+    // derived from the role. Idempotent: repeated grants return the
+    // existing RoleAssignment unchanged (including original granted_at).
+    //
+    // Errors:
+    //   NOT_FOUND           - user or role does not exist
+    //   FAILED_PRECONDITION - role is DISABLED, or user is BLOCKED/DELETED
+    //   PERMISSION_DENIED   - caller lacks ACCESS_WRITE on the role's app
+    //   INVALID_ARGUMENT    - user_id or role_id is not a valid UUID
+    rpc GrantRoleToUser(GrantRoleToUserRequest) returns (RoleAssignment);
+
+    // RemoveRoleFromUser removes a role assignment. Idempotent: removing
+    // a non-existent assignment succeeds with no effect.
+    //
+    // Errors:
+    //   NOT_FOUND         - user or role does not exist
+    //   PERMISSION_DENIED - caller lacks ACCESS_WRITE on the role's app
+    //   INVALID_ARGUMENT  - user_id or role_id is not a valid UUID
+    rpc RemoveRoleFromUser(RemoveRoleFromUserRequest) returns (google.protobuf.Empty);
+
+    // BulkGrantRoles atomically grants up to 32 roles to one user within
+    // one app. All role_ids MUST belong to the given app_id - this is
+    // verified server-side as a safety guard against cross-app bulk ops.
+    //
+    // Why the 32-item limit:
+    //   - each entry requires a uniqueness/existence check + insert +
+    //     audit-event emission inside one DB transaction; 32 is the
+    //     empirical cap that keeps lock hold-time below the hot-path
+    //     budget on the smallest supported database tier;
+    //   - admin UIs typically commit role changes in small batches
+    //     (a single screen / dialog), so 32 covers realistic UX flows;
+    //   - larger bulk reshuffles (tenant onboarding, role-model
+    //     migration) are expected to iterate in chunks of <=32 rather
+    //     than enlarge this limit.
+    //
+    // All-or-nothing: on any validation failure, NO assignments are
+    // created. Idempotent per entry: pre-existing assignments are
+    // returned alongside the newly created ones.
+    //
+    // Errors:
+    //   NOT_FOUND           - user, app, or any role does not exist
+    //   FAILED_PRECONDITION - any role is DISABLED, any role does not
+    //                         belong to app_id, or user is BLOCKED/DELETED
+    //   PERMISSION_DENIED   - caller lacks ACCESS_ADMIN on the target app
+    //   INVALID_ARGUMENT    - invalid UUIDs, empty role_ids, or >32 items
+    rpc BulkGrantRoles(BulkGrantRolesRequest) returns (BulkGrantRolesResponse);
+
+    // BulkRemoveRoles atomically removes up to 32 role assignments from
+    // one user within one app. All role_ids MUST belong to the given
+    // app_id. See BulkGrantRoles for the rationale behind the 32-item cap.
+    //
+    // All-or-nothing: on any validation failure, NO assignments are
+    // removed. Idempotent per entry: non-existent assignments are
+    // silently ignored.
+    //
+    // Errors:
+    //   NOT_FOUND           - user or app does not exist
+    //   FAILED_PRECONDITION - any role does not belong to app_id
+    //   PERMISSION_DENIED   - caller lacks ACCESS_ADMIN on the target app
+    //   INVALID_ARGUMENT    - invalid UUIDs, empty role_ids, or >32 items
+    rpc BulkRemoveRoles(BulkRemoveRolesRequest) returns (google.protobuf.Empty);
+
+    // BatchCheckPermission answers multiple permission queries in one
+    // round trip. Semantics per entry are identical to CheckPermission;
+    // this is purely a latency optimization for UIs that need to render
+    // capability-dependent elements (buttons, menu items, tabs) whose
+    // visibility depends on several permissions at once.
+    //
+    // The response is positionally aligned with the request: allowed[i]
+    // corresponds to permissions[i]. matched_role_ids is NOT returned in
+    // batch form - if an UI needs attribution, it should call the single
+    // CheckPermission for that specific permission.
+    //
+    // Same caching guidance as CheckPermission (30-60s typical).
+    //
+    // Errors:
+    //   NOT_FOUND         - user or app does not exist
+    //   PERMISSION_DENIED - caller lacks ACCESS_READ on the target app
+    //   INVALID_ARGUMENT  - invalid UUIDs; empty / >32 permissions list;
+    //                       any permission fails the canonical pattern
+    rpc BatchCheckPermission(BatchCheckPermissionRequest) returns (BatchCheckPermissionResponse);
+
+    // CheckPermission returns whether the user holds the given permission
+    // in the target app via any of their currently assigned ACTIVE roles.
+    //
+    // DISABLED roles do not contribute to the decision. Wildcard actions
+    // in role permissions (e.g. "users:*") match concrete actions
+    // ("users:read", "users:write").
+    //
+    // High-QPS endpoint; safe to cache results briefly (30-60s typical).
+    //
+    // Errors:
+    //   NOT_FOUND         - user or app does not exist
+    //   PERMISSION_DENIED - caller lacks ACCESS_READ on the target app
+    //   INVALID_ARGUMENT  - invalid UUIDs or malformed permission string
+    rpc CheckPermission(CheckPermissionRequest) returns (CheckPermissionResponse);
+}
+
+// ============================================================================
+// ListUserRolesOrderBy - supported sort orders (AIP-132 typed)
+// ============================================================================
+enum ListUserRolesOrderBy {
+    // Server default (currently GRANTED_AT_DESC).
+    LIST_USER_ROLES_ORDER_BY_UNSPECIFIED = 0;
+
+    LIST_USER_ROLES_ORDER_BY_GRANTED_AT_DESC = 1;
+    LIST_USER_ROLES_ORDER_BY_GRANTED_AT_ASC = 2;
+    LIST_USER_ROLES_ORDER_BY_ROLE_ID_DESC = 3;
+    LIST_USER_ROLES_ORDER_BY_ROLE_ID_ASC = 4;
+
+    // Reserved for future sort keys.
+    reserved 100 to 199;
+}
+
+// ============================================================================
+// RoleAssignment - the (user x role) relationship with audit metadata
+// ============================================================================
+// Returned by GrantRoleToUser and BulkGrantRoles so callers can observe
+// the audit trail without a follow-up read.
+message RoleAssignment {
+    // UUID of the user this assignment is for.
+    string user_id = 1;
+
+    // UUID of the assigned role.
+    string role_id = 2;
+
+    // UUID of the app the role belongs to. Denormalized from the role
+    // for server-side indexing and client-side display; always equals
+    // Role.app_id looked up by role_id.
+    string app_id = 3;
+
+    // UUID of the user who created the assignment. Derived by the server
+    // from the caller's access_token at grant time.
+    string granted_by_user_id = 4;
+
+    // Timestamp when the assignment was created. Set once on creation
+    // and preserved across idempotent re-grants.
+    google.protobuf.Timestamp granted_at = 5;
+}
+
+// ============================================================================
+// HasRoleInAppRequest - payload for HasRoleInApp
+// ============================================================================
+message HasRoleInAppRequest {
+    // UUID of the user to check.
+    string user_id = 1 [(buf.validate.field).string.uuid = true];
+
+    // UUID of the role. The target app is determined by the role.
+    string role_id = 2 [(buf.validate.field).string.uuid = true];
+}
+
+// ============================================================================
+// HasRoleInAppResponse - result of HasRoleInApp
+// ============================================================================
+message HasRoleInAppResponse {
+    // True if the user currently has an assignment for this role.
+    // DISABLED roles still return true here - the assignment exists.
+    bool has_role = 1;
+}
+
+// ============================================================================
+// ListUserRolesRequest - paginated list of a user's roles in an app
+// ============================================================================
+message ListUserRolesRequest {
+    // Maximum number of items per page (0-1000). 0 means "server default".
+    // Negative values rejected with INVALID_ARGUMENT (AIP-158).
+    int32 page_size = 1 [
+        (buf.validate.field).int32.gte = 0,
+        (buf.validate.field).int32.lte = 1000
+    ];
+
+    // Opaque pagination token from the previous response.
+    // Empty string for the first page.
+    string page_token = 2;
+
+    // UUID of the user to list roles for.
+    string user_id = 3 [(buf.validate.field).string.uuid = true];
+
+    // UUID of the app to scope the listing to.
+    string app_id = 4 [(buf.validate.field).string.uuid = true];
+
+    // Typed sort order (AIP-132). UNSPECIFIED selects the server default.
+    // Tie-breaker role_id is always appended implicitly.
+    ListUserRolesOrderBy order_by = 5;
+}
+
+// ============================================================================
+// ListUserRolesResponse
+// ============================================================================
+message ListUserRolesResponse {
+    // Roles currently assigned to the user in the target app.
+    // Includes DISABLED roles (status carried on each Role).
+    repeated sso.roles.v1.Role roles = 1;
+
+    // Opaque token to fetch the next page. Empty if this was the last page.
+    string next_page_token = 2;
+
+    // Total number of assignments matching the request across all pages.
+    // May be approximate. Unset => server did not compute a total;
+    // set to 0 => genuinely no matches.
+    optional int32 total_size = 3;
+}
+
+// ============================================================================
+// GrantRoleToUserRequest - payload for GrantRoleToUser
+// ============================================================================
+message GrantRoleToUserRequest {
+    // UUID of the user to grant the role to.
+    string user_id = 1 [(buf.validate.field).string.uuid = true];
+
+    // UUID of the role to grant. The app is derived from the role.
+    string role_id = 2 [(buf.validate.field).string.uuid = true];
+}
+
+// ============================================================================
+// RemoveRoleFromUserRequest - payload for RemoveRoleFromUser
+// ============================================================================
+message RemoveRoleFromUserRequest {
+    // UUID of the user whose assignment should be removed.
+    string user_id = 1 [(buf.validate.field).string.uuid = true];
+
+    // UUID of the role to remove. The app is derived from the role.
+    string role_id = 2 [(buf.validate.field).string.uuid = true];
+}
+
+// ============================================================================
+// BulkGrantRolesRequest - payload for BulkGrantRoles
+// ============================================================================
+// app_id is an explicit scope: all role_ids must belong to this app or
+// the request is rejected wholesale. This guards against accidentally
+// mixing roles from different apps in one bulk call.
+message BulkGrantRolesRequest {
+    // UUID of the user to grant roles to.
+    string user_id = 1 [(buf.validate.field).string.uuid = true];
+
+    // UUID of the target app. All role_ids MUST belong to this app.
+    string app_id = 2 [(buf.validate.field).string.uuid = true];
+
+    // UUIDs of the roles to grant (1-32 items).
+    repeated string role_ids = 3 [
+        (buf.validate.field).repeated.items.string.uuid = true,
+        (buf.validate.field).repeated.min_items = 1,
+        (buf.validate.field).repeated.max_items = 32
+    ];
+}
+
+// ============================================================================
+// BulkGrantRolesResponse
+// ============================================================================
+message BulkGrantRolesResponse {
+    // All assignments for the requested (user, role) pairs after the
+    // call completes - both newly created and pre-existing. Order
+    // matches the role_ids order in the request.
+    repeated RoleAssignment role_assignments = 1;
+
+    // Parallel to role_assignments: true for assignments created by this
+    // call, false for pre-existing ones (idempotent re-grants). Useful
+    // for audit trails. Length always equals len(role_assignments).
+    repeated bool newly_created = 2;
+}
+
+// ============================================================================
+// BulkRemoveRolesRequest - payload for BulkRemoveRoles
+// ============================================================================
+// app_id is an explicit scope; same safety semantics as BulkGrantRoles.
+message BulkRemoveRolesRequest {
+    // UUID of the user whose assignments should be removed.
+    string user_id = 1 [(buf.validate.field).string.uuid = true];
+
+    // UUID of the target app. All role_ids MUST belong to this app.
+    string app_id = 2 [(buf.validate.field).string.uuid = true];
+
+    // UUIDs of the roles to remove (1-32 items).
+    repeated string role_ids = 3 [
+        (buf.validate.field).repeated.items.string.uuid = true,
+        (buf.validate.field).repeated.min_items = 1,
+        (buf.validate.field).repeated.max_items = 32
+    ];
+}
+
+// ============================================================================
+// CheckPermissionRequest - payload for CheckPermission
+// ============================================================================
+message CheckPermissionRequest {
+    // UUID of the user whose permissions are being checked.
+    string user_id = 1 [(buf.validate.field).string.uuid = true];
+
+    // UUID of the app in which to evaluate the permission.
+    string app_id = 2 [(buf.validate.field).string.uuid = true];
+
+    // Permission in canonical "resource:action" form (e.g. "users:read",
+    // "apps:write"). Wildcards in role-side permissions ("users:*")
+    // match concrete actions here; the request itself must be concrete.
+    //
+    // Pattern: `^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$`. Lowercase identifiers
+    // separated by a single colon; wildcard "*" is NOT accepted on the
+    // request side (only in role definitions). Malformed strings are
+    // rejected with INVALID_ARGUMENT / VALIDATION_FAILED.
+    string permission = 3 [
+        (buf.validate.field).string.min_len = 3,
+        (buf.validate.field).string.max_len = 64,
+        (buf.validate.field).string.pattern = "^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$"
+    ];
+}
+
+// ============================================================================
+// CheckPermissionResponse
+// ============================================================================
+message CheckPermissionResponse {
+    // True if at least one ACTIVE role assigned to the user in the app
+    // carries a permission that matches the requested one.
+    bool allowed = 1;
+
+    // UUIDs of the roles that contributed to the allow decision.
+    // Empty if allowed == false. Useful for audit trails and debugging
+    // unexpected grants; do not rely on the order.
+    //
+    // SECURITY: this field exposes the internal RBAC structure of the
+    // target app. The RPC is intended for INTERNAL service-to-service
+    // callers only. Deployments MUST reject CheckPermission at ingress
+    // from untrusted clients, or strip matched_role_ids at the gateway
+    // before returning the response to end-user clients.
+    repeated string matched_role_ids = 2;
+}
+
+// ============================================================================
+// BatchCheckPermissionRequest - payload for BatchCheckPermission
+// ============================================================================
+// Up to 32 permissions in one call. The cap matches BulkGrantRoles for
+// consistency across the service; the rationale is a realistic UI-render
+// footprint (sidebar menu, screen-level toolbar) rather than bulk
+// admin operations.
+message BatchCheckPermissionRequest {
+    // UUID of the user whose permissions are being checked.
+    string user_id = 1 [(buf.validate.field).string.uuid = true];
+
+    // UUID of the app in which to evaluate the permissions.
+    string app_id = 2 [(buf.validate.field).string.uuid = true];
+
+    // Permissions to evaluate, each in canonical "resource:action" form.
+    // Same validation rules as CheckPermissionRequest.permission.
+    repeated string permissions = 3 [
+        (buf.validate.field).repeated.min_items = 1,
+        (buf.validate.field).repeated.max_items = 32,
+        (buf.validate.field).repeated.items.string.min_len = 3,
+        (buf.validate.field).repeated.items.string.max_len = 64,
+        (buf.validate.field).repeated.items.string.pattern = "^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$"
+    ];
+}
+
+// ============================================================================
+// BatchCheckPermissionResponse
+// ============================================================================
+// Positionally aligned with the request: allowed[i] corresponds to
+// BatchCheckPermissionRequest.permissions[i]. Length is guaranteed equal
+// to the request length.
+//
+// Unlike CheckPermissionResponse, matched_role_ids is intentionally NOT
+// returned here - exposing N x M matched-role sets in one batch would
+// both balloon the response and multiply the RBAC-disclosure surface
+// flagged on CheckPermissionResponse. Callers that need attribution
+// should fall back to the single CheckPermission for that permission.
+message BatchCheckPermissionResponse {
+    repeated bool allowed = 1;
+}

@@ -1,0 +1,402 @@
+syntax = "proto3";
+
+package sso.roles.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/Nergous/sso_protos/gen/go/sso/roles/v1;ssorolesv1";
+
+// ============================================================================
+// RolesService - Role Definition Management
+// ============================================================================
+// Defines roles (named bundles of permissions) scoped to a specific
+// application. Roles are DEFINED here but NOT assigned to users - user-role
+// assignments live in AccessService.
+//
+// Permission model:
+//   Each role carries a flat list of permission strings in the canonical
+//   "resource:action" form (e.g. "users:read", "apps:write"). The "*" action
+//   acts as a wildcard within a resource (e.g. "users:*" grants all user
+//   actions). Permission semantics are opaque to RolesService; downstream
+//   apps interpret them at their discretion.
+//
+//   Canonical permission grammar (validated on CreateRole / UpdateRole):
+//     resource := [a-z][a-z0-9_]*                      // strict
+//     action   := [a-z][a-z0-9_]*   |   *              // wildcard only on action
+//     permission := resource ":" action
+//   Length: 3-64 characters, identical to the consumer-side pattern in
+//   AccessService.CheckPermissionRequest.permission. The "*:*" form is
+//   NOT allowed as a "grant everything" shortcut - such grants MUST be
+//   enumerated per resource.
+//
+// Lifecycle:
+//   ACTIVE   - role is enabled; its permissions take effect for every
+//              user currently assigned this role in AccessService.
+//   DISABLED - role is temporarily inactive. Assignments are preserved,
+//              but the role's permissions do NOT take effect at runtime.
+//              Reversible via EnableRole.
+//   (deleted) - DeleteRole removes the role permanently; see Cascade below.
+//
+// Cascade:
+//   - PermanentlyDeleteApp on the parent app cascades: all roles in that
+//     app and all their assignments are removed.
+//   - DeleteRole with force = true cascades to AccessService: every active
+//     assignment of the role is removed as part of the deletion.
+//
+// Security:
+//   All RPCs are authenticated; access is role-based within the target app.
+//     ROLE_READ   - GetRole, ListRoles
+//     ROLE_WRITE  - CreateRole, UpdateRole, DisableRole, EnableRole
+//     ROLE_DELETE - PermanentlyDeleteRole
+// ============================================================================
+service RolesService {
+    // GetRole returns a role definition by UUID.
+    //
+    // Errors:
+    //   NOT_FOUND         - role does not exist
+    //   PERMISSION_DENIED - caller lacks ROLE_READ on the role's app
+    //   INVALID_ARGUMENT  - role_id is not a valid UUID
+    rpc GetRole(GetRoleRequest) returns (Role);
+
+    // ListRoles returns a paginated list of roles within an app.
+    //
+    // By default, both ACTIVE and DISABLED roles are included. To filter,
+    // set RoleFilters.statuses.
+    //
+    // Errors:
+    //   PERMISSION_DENIED - caller lacks ROLE_READ on the target app
+    //   NOT_FOUND         - target app does not exist
+    //   INVALID_ARGUMENT  - invalid page_token / page_size / filters
+    rpc ListRoles(ListRolesRequest) returns (ListRolesResponse);
+
+    // CreateRole creates a new role in the target app.
+    //
+    // Role names must be unique per app (case-sensitive).
+    //
+    // Errors:
+    //   ALREADY_EXISTS    - a role with this name already exists in the app
+    //   NOT_FOUND         - target app does not exist
+    //   PERMISSION_DENIED - caller lacks ROLE_WRITE on the target app
+    //   INVALID_ARGUMENT  - app_id / name / description / permissions failed validation
+    rpc CreateRole(CreateRoleRequest) returns (Role);
+
+    // UpdateRole partially updates a role definition.
+    //
+    // The set of fields to apply is driven by update_mask (AIP-134).
+    // Valid mask paths: name, description, permissions.
+    // role_id, app_id, status, etag and timestamps are NOT updatable here.
+    // Use DisableRole / EnableRole to change status, and DeleteRole to remove.
+    //
+    // Optimistic concurrency: if etag is provided and does not match the
+    // server-side value, the request is rejected with ABORTED.
+    //
+    // Errors:
+    //   NOT_FOUND         - role does not exist
+    //   ABORTED           - etag mismatch (concurrent modification)
+    //   ALREADY_EXISTS    - rename collides with an existing role in the app
+    //   PERMISSION_DENIED - caller lacks ROLE_WRITE on the role's app
+    //   INVALID_ARGUMENT  - empty mask, unknown mask path, or invalid value
+    rpc UpdateRole(UpdateRoleRequest) returns (Role);
+
+    // DisableRole transitions the role to DISABLED. Idempotent.
+    //
+    // Permissions carried by the role stop taking effect at runtime;
+    // assignments are preserved so the role can be reactivated later.
+    // If allow_missing=true, NOT_FOUND is converted to a successful no-op.
+    //
+    // Errors:
+    //   NOT_FOUND         - role does not exist (suppressed if allow_missing)
+    //   PERMISSION_DENIED - caller lacks ROLE_WRITE on the role's app
+    //   INVALID_ARGUMENT  - role_id is not a valid UUID
+    rpc DisableRole(DisableRoleRequest) returns (google.protobuf.Empty);
+
+    // EnableRole transitions the role back to ACTIVE. Idempotent.
+    // If allow_missing=true, NOT_FOUND is converted to a successful no-op.
+    //
+    // Errors:
+    //   NOT_FOUND         - role does not exist (suppressed if allow_missing)
+    //   PERMISSION_DENIED - caller lacks ROLE_WRITE on the role's app
+    //   INVALID_ARGUMENT  - role_id is not a valid UUID
+    rpc EnableRole(EnableRoleRequest) returns (google.protobuf.Empty);
+
+    // PermanentlyDeleteRole removes a role permanently.
+    //
+    // Destructive confirmation: requires an etag matching the current
+    // server-side Role.etag (prevents accidental deletion based on a
+    // stale read).
+    //
+    // Cascade: if the role has active assignments in AccessService, the
+    // request is rejected with FAILED_PRECONDITION unless allow_cascade
+    // is true. When allow_cascade=true, all assignments of the role are
+    // removed atomically as part of the deletion.
+    //
+    // Errors:
+    //   NOT_FOUND           - role does not exist
+    //   FAILED_PRECONDITION - role has active assignments and
+    //                         allow_cascade != true
+    //   ABORTED             - supplied etag does not match current Role.etag
+    //                         (ERROR_REASON_ETAG_MISMATCH)
+    //   PERMISSION_DENIED   - caller lacks ROLE_DELETE on the role's app
+    //   INVALID_ARGUMENT    - role_id is not a valid UUID, or etag missing
+    rpc PermanentlyDeleteRole(PermanentlyDeleteRoleRequest) returns (google.protobuf.Empty);
+}
+
+// ============================================================================
+// ListRolesOrderBy - supported sort orders for ListRoles (AIP-132 typed)
+// ============================================================================
+enum ListRolesOrderBy {
+    // Server default (currently CREATED_AT_DESC).
+    LIST_ROLES_ORDER_BY_UNSPECIFIED = 0;
+
+    LIST_ROLES_ORDER_BY_CREATED_AT_DESC = 1;
+    LIST_ROLES_ORDER_BY_CREATED_AT_ASC = 2;
+    LIST_ROLES_ORDER_BY_ROLE_ID_DESC = 3;
+    LIST_ROLES_ORDER_BY_ROLE_ID_ASC = 4;
+    LIST_ROLES_ORDER_BY_NAME_DESC = 5;
+    LIST_ROLES_ORDER_BY_NAME_ASC = 6;
+
+    // Reserved for future sort keys.
+    reserved 100 to 199;
+}
+
+// ============================================================================
+// RoleStatus - lifecycle state of a role
+// ============================================================================
+enum RoleStatus {
+    ROLE_STATUS_UNSPECIFIED = 0;
+
+    // Role is active; its permissions take effect for assigned users.
+    ROLE_STATUS_ACTIVE = 1;
+
+    // Role is temporarily disabled; permissions do not take effect, but
+    // assignments are preserved. Reversible via EnableRole.
+    ROLE_STATUS_DISABLED = 2;
+
+    // Reserved for future lifecycle states (e.g. DEPRECATED, ARCHIVED).
+    reserved 100 to 199;
+}
+
+// ============================================================================
+// Role - canonical role definition (response type)
+// ============================================================================
+// Output-only fields (etag, timestamps) are set by the server and ignored
+// on input.
+message Role {
+    // Role UUID (RFC 4122).
+    string role_id = 1;
+
+    // UUID of the app this role belongs to. Immutable.
+    string app_id = 2;
+
+    // Role name. Unique per app, case-sensitive (1-128 chars).
+    string name = 3;
+
+    // Human-readable description (0-1024 chars). Empty if not set.
+    string description = 4;
+
+    // Permissions granted by this role in "resource:action" form
+    // (e.g. "users:read", "apps:*"). Interpreted by downstream apps.
+    // Up to 128 entries per role; each entry follows the canonical
+    // grammar described in the service-level comment above. The pattern
+    // mirrors AccessService.CheckPermissionRequest.permission but
+    // additionally allows `*` on the action side to express wildcards.
+    repeated string permissions = 5 [
+        (buf.validate.field).repeated.max_items = 128,
+        (buf.validate.field).repeated.items.string.min_len = 3,
+        (buf.validate.field).repeated.items.string.max_len = 64,
+        (buf.validate.field).repeated.items.string.pattern = "^[a-z][a-z0-9_]*:([a-z][a-z0-9_]*|\\*)$"
+    ];
+
+    // Current lifecycle status.
+    RoleStatus status = 6;
+
+    // Opaque version token for optimistic concurrency (AIP-154).
+    // Send back in UpdateRoleRequest.etag to detect concurrent modifications.
+    string etag = 7;
+
+    // Role creation timestamp (output-only).
+    google.protobuf.Timestamp created_at = 8;
+
+    // Last update timestamp (output-only). Refreshed on UpdateRole,
+    // DisableRole, EnableRole.
+    google.protobuf.Timestamp updated_at = 9;
+}
+
+// ============================================================================
+// GetRoleRequest
+// ============================================================================
+message GetRoleRequest {
+    // UUID of the role to retrieve.
+    string role_id = 1 [(buf.validate.field).string.uuid = true];
+}
+
+// ============================================================================
+// RoleFilters - filtering options for ListRoles
+// ============================================================================
+// Semantics:
+//   - app_id scopes the listing to a single app (required).
+//   - search is a case-insensitive substring match over name and description
+//     (OR between fields).
+//   - If statuses is empty, both ACTIVE and DISABLED roles are returned.
+message RoleFilters {
+    // UUID of the target app. Required - roles are always listed per app.
+    string app_id = 1 [(buf.validate.field).string.uuid = true];
+
+    // Free-text search across name and description (max 128 chars).
+    string search = 2 [(buf.validate.field).string.max_len = 128];
+
+    // Filter by role lifecycle status (OR logic). Empty list = no filter.
+    repeated RoleStatus statuses = 3 [(buf.validate.field).repeated.max_items = 3];
+}
+
+// ============================================================================
+// ListRolesRequest - paginated list of roles in an app
+// ============================================================================
+message ListRolesRequest {
+    // Page size (0-1000). 0 means "server default". Negative values
+    // rejected with INVALID_ARGUMENT (AIP-158).
+    int32 page_size = 1 [
+        (buf.validate.field).int32.gte = 0,
+        (buf.validate.field).int32.lte = 1000
+    ];
+
+    // Opaque pagination token from the previous response.
+    // Empty string for the first page.
+    string page_token = 2;
+
+    // Filters applied to the listing. app_id inside is required.
+    RoleFilters filters = 3;
+
+    // Typed sort order (AIP-132). UNSPECIFIED selects the server default.
+    // Tie-breaker role_id is always appended implicitly.
+    ListRolesOrderBy order_by = 4;
+}
+
+// ============================================================================
+// ListRolesResponse
+// ============================================================================
+message ListRolesResponse {
+    // Roles for the current page.
+    repeated Role roles = 1;
+
+    // Opaque token to fetch the next page. Empty if this was the last page.
+    string next_page_token = 2;
+
+    // Total number of roles matching the filters across all pages.
+    // May be approximate. Unset => server did not compute a total;
+    // set to 0 => genuinely no matches.
+    optional int32 total_size = 3;
+}
+
+// ============================================================================
+// CreateRoleRequest - AIP-133 create
+// ============================================================================
+// Shape: (parent, resource). `parent` is the target app; `role` is the
+// resource to create. The server populates role_id, status (always
+// ACTIVE), etag, created_at, updated_at; any client-supplied values for
+// those fields in `role` are ignored.
+//
+// Fields the client MUST populate in `role`:
+//   name, permissions
+// Fields the client MAY populate:
+//   description
+message CreateRoleRequest {
+    // Parent: UUID of the app to create the role in.
+    string parent_app_id = 1 [(buf.validate.field).string.uuid = true];
+
+    // Role definition. Server-managed fields are ignored.
+    Role role = 2;
+}
+
+// ============================================================================
+// UpdateRoleRequest - FieldMask-based partial update (AIP-134)
+// ============================================================================
+// Only fields listed in update_mask are applied. A field omitted from the
+// mask is left unchanged; a field present in the mask with an empty value
+// clears the field (where permitted).
+//
+// Valid mask paths (SERVER MUST REJECT any other path with INVALID_ARGUMENT):
+//   name
+//   description
+//   permissions
+//
+// Explicitly INVALID mask paths (server MUST reject):
+//   role_id, app_id     (immutable identity and parenthood)
+//   status              (lifecycle; use DisableRole / EnableRole)
+//   etag                (server-managed; use the top-level etag field)
+//   created_at, updated_at (output-only timestamps)
+//
+// The `Role role` payload MAY carry values for any field (including
+// immutable ones); the server MUST IGNORE any field whose path is not in
+// update_mask. Populating `status` in `role` without "status" in the mask
+// MUST be a silent no-op, never a hidden write.
+message UpdateRoleRequest {
+    // UUID of the role to update (required).
+    string role_id = 1 [(buf.validate.field).string.uuid = true];
+
+    // New field values. Fields not referenced by update_mask are ignored.
+    Role role = 2;
+
+    // Set of field paths to apply from `role`. Must be non-empty.
+    google.protobuf.FieldMask update_mask = 3;
+
+    // Required optimistic concurrency token.
+    // "*" means unconditional update.
+    string etag = 4 [(buf.validate.field).string.min_len = 1];
+}
+
+// ============================================================================
+// DisableRoleRequest - transitions role to DISABLED
+// ============================================================================
+message DisableRoleRequest {
+    // UUID of the role to disable.
+    string role_id = 1 [(buf.validate.field).string.uuid = true];
+
+    // When true, a missing role_id returns OK instead of NOT_FOUND,
+    // so retries are safe after partial-success scenarios (AIP-135).
+    bool allow_missing = 2;
+}
+
+// ============================================================================
+// EnableRoleRequest - transitions role back to ACTIVE
+// ============================================================================
+message EnableRoleRequest {
+    // UUID of the role to reactivate.
+    string role_id = 1 [(buf.validate.field).string.uuid = true];
+
+    // See DisableRoleRequest.allow_missing.
+    bool allow_missing = 2;
+}
+
+// ============================================================================
+// PermanentlyDeleteRoleRequest - permanently removes a role
+// ============================================================================
+// Destructive confirmation: requires an etag matching the current server
+// Role.etag (stronger than a boolean; prevents accidental deletion based
+// on a stale read or a copy-pasted request body).
+//
+// Cascade to assignments: if the role has active assignments in
+// AccessService, allow_cascade = true is required; otherwise the request
+// is rejected with FAILED_PRECONDITION. With allow_cascade = true, all
+// assignments of the role are removed atomically as part of the deletion.
+message PermanentlyDeleteRoleRequest {
+    // UUID of the role to delete.
+    string role_id = 1 [(buf.validate.field).string.uuid = true];
+
+    // Current Role.etag observed by the caller. "*" is NOT accepted.
+    string etag = 2 [
+        (buf.validate.field).string.min_len = 1,
+        (buf.validate.field).cel = {
+            id: "etag.no_wildcard",
+            message: "etag '*' is not permitted for PermanentlyDeleteRole",
+            expression: "this != '*'"
+        }
+    ];
+
+    // When true, cascades the delete to active role assignments in
+    // AccessService. Required if any assignments exist.
+    bool allow_cascade = 3;
+}

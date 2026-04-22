@@ -1,0 +1,321 @@
+syntax = "proto3";
+
+package sso.common.v1;
+
+option go_package = "github.com/Nergous/sso_protos/gen/go/sso/common/v1;ssocommonv1";
+
+// ============================================================================
+// Error handling conventions
+// ============================================================================
+// All SSO RPCs return errors using the standard gRPC status model:
+//   - a grpc.Status code (e.g. INVALID_ARGUMENT, NOT_FOUND, UNAUTHENTICATED)
+//   - a human-readable `message` suitable for logs
+//   - an optional list of `details` messages providing machine-readable context
+//
+// Servers SHOULD attach one google.rpc.ErrorInfo with:
+//   - reason   = one of the ErrorReason values below
+//   - domain   = "sso.nergous.ru"
+//   - metadata = free-form key/value for per-reason context (e.g. resource
+//                ids, field names) that is not expressible in the enum
+//
+// For validation errors, the server SHOULD additionally attach one
+// google.rpc.BadRequest describing the offending fields.
+//
+// Clients SHOULD switch on ErrorInfo.reason rather than parsing the message
+// string. The gRPC Status code is a coarse classification; ErrorReason
+// gives the precise business-level cause.
+//
+// Security note:
+//   INVALID_CREDENTIALS and INVALID_TOKEN are intentionally generic - the
+//   server does NOT leak whether a credential was wrong, a token was
+//   expired, revoked, or malformed, to avoid information-disclosure.
+// ============================================================================
+
+// ============================================================================
+// ErrorReason - machine-readable cause of a failed RPC
+// ============================================================================
+// Stability contract:
+//   Once assigned, a (name, number) pair MUST NOT be reused for a different
+//   semantic meaning. Removed values stay `reserved` to prevent silent
+//   repurposing.
+//
+// Scope:
+//   This enum is shared across every sso.*.v1 service. It MAY ONLY be
+//   extended additively within sso.common.v1 - new values are appended to
+//   an existing block, or a fresh block is opened above the headroom of
+//   an existing one. Renumbering, repurposing, or removing a value is a
+//   WIRE-BREAKING change across the whole surface.
+//
+//   For buf breaking: sso/common/v1/errors.proto is the single file whose
+//   modification can affect every other package. `breaking: use: PACKAGE`
+//   at the buf.yaml level enforces this as a tripwire.
+//
+// Numbering convention:
+//   Values are grouped by domain. Each block leaves headroom for future
+//   reasons:
+//     1-19    Authentication
+//     20-39   Validation / concurrency
+//     40-59   User identity
+//     60-79   Apps
+//     80-99   Roles
+//     100-119 Authorization
+//     120-139 MFA
+//     140-159 Recovery codes
+//     160-179 Service accounts
+//
+// The comment on each value lists the RPCs that emit it and the gRPC
+// Status code it maps to.
+enum ErrorReason {
+    // Default. MUST NOT be used explicitly - indicates a server bug
+    // (reason was never set).
+    ERROR_REASON_UNSPECIFIED = 0;
+
+    // --- Authentication (1-19) --------------------------------------------
+
+    // Login credentials did not match any known user. Generic on purpose -
+    // the server does not disclose whether email or password was wrong.
+    // Emitted by: AuthService.Login.
+    // gRPC Status: UNAUTHENTICATED.
+    ERROR_REASON_INVALID_CREDENTIALS = 1;
+
+    // The supplied token is expired, malformed, revoked, or otherwise
+    // invalid. Generic on purpose (same security rationale as above).
+    // Emitted by: AuthService.Logout, Refresh, ValidateToken,
+    //             RevokeSession, RevokeToken; and any RPC requiring
+    //             an access_token in metadata.
+    // gRPC Status: UNAUTHENTICATED.
+    ERROR_REASON_INVALID_TOKEN = 2;
+
+    // Requested session does not exist.
+    // Emitted by: AuthService.RevokeSession.
+    // gRPC Status: NOT_FOUND.
+    ERROR_REASON_SESSION_NOT_FOUND = 3;
+
+    // Session exists but belongs to a different user than the caller.
+    // Emitted by: AuthService.RevokeSession.
+    // gRPC Status: PERMISSION_DENIED.
+    ERROR_REASON_SESSION_NOT_OWNED = 4;
+
+    // The old_password supplied to ChangePassword did not match the
+    // caller's current password. Distinct from INVALID_TOKEN: the
+    // access_token itself is valid, but the proof-of-identity check
+    // failed.
+    //
+    // Rate-limiting (REQUIRED on the server):
+    //   A caller with a valid access_token can otherwise probe passwords
+    //   for their own account. Servers MUST enforce a per-user exponential
+    //   backoff on repeated PASSWORD_MISMATCH results (e.g. 5 failures in
+    //   15 minutes -> temporary ChangePassword lockout) and SHOULD emit
+    //   a security-audit event on each mismatch.
+    //
+    // Emitted by: AuthService.ChangePassword.
+    // gRPC Status: UNAUTHENTICATED.
+    ERROR_REASON_PASSWORD_MISMATCH = 5;
+
+    // --- Validation / concurrency (20-39) ---------------------------------
+
+    // One or more request fields failed validation. The accompanying
+    // google.rpc.BadRequest enumerates the offending fields.
+    // Emitted by: every RPC with field validators.
+    // gRPC Status: INVALID_ARGUMENT.
+    ERROR_REASON_VALIDATION_FAILED = 20;
+
+    // Optimistic-concurrency check failed: the supplied etag does not
+    // match the current server-side value (concurrent modification),
+    // or a destructive RPC (PermanentlyDelete*) was issued with a stale
+    // or mismatched etag.
+    // Emitted by: UpdateUser, UpdateApp, UpdateRole,
+    //             PermanentlyDeleteUser, PermanentlyDeleteApp,
+    //             PermanentlyDeleteRole.
+    // gRPC Status: ABORTED.
+    ERROR_REASON_ETAG_MISMATCH = 21;
+
+    // --- User identity (40-59) --------------------------------------------
+
+    // A user with the supplied email or username already exists.
+    //
+    // User-enumeration mitigation (REQUIRED on the server):
+    //   The server MUST NOT reveal which specific field collided.
+    //   In particular:
+    //     - DO NOT attach a google.rpc.BadRequest enumerating the
+    //       offending field (email vs username).
+    //     - DO NOT populate ErrorInfo.metadata with the colliding value.
+    //     - The status message SHOULD be a fixed generic string
+    //       (e.g. "registration failed"), identical to the message used
+    //       for benign validation rejections where practical.
+    //   The reason code itself is machine-readable and leaks only that
+    //   *some* uniqueness constraint tripped - which is the minimum a
+    //   well-behaved client still needs to recover (retry with different
+    //   credentials vs. fix a format error).
+    //
+    //   Deployments with a hard no-enumeration requirement (public
+    //   self-registration) SHOULD additionally consider returning OK
+    //   unconditionally and driving verification through an out-of-band
+    //   email confirmation step.
+    //
+    // Emitted by: AuthService.Register.
+    // gRPC Status: ALREADY_EXISTS.
+    ERROR_REASON_USER_ALREADY_EXISTS = 40;
+
+    // No user matches the requested id.
+    // Emitted by: IdentityService.*, AccessService.*, AuthService.*
+    //             (when resolving a user by id).
+    // gRPC Status: NOT_FOUND.
+    ERROR_REASON_USER_NOT_FOUND = 41;
+
+    // Target user is in BLOCKED status and cannot perform the requested
+    // operation (e.g. Login, receive a role grant).
+    // Emitted by: AuthService.Login, AccessService.GrantRoleToUser,
+    //             AccessService.BulkGrantRoles.
+    // gRPC Status: FAILED_PRECONDITION.
+    ERROR_REASON_USER_BLOCKED = 42;
+
+    // Target user is in DELETED status (soft-deleted). Most write
+    // operations on a deleted user are rejected.
+    // Emitted by: IdentityService.UpdateUser / EnableUser / DisableUser,
+    //             AuthService.Login, AccessService.GrantRoleToUser.
+    // gRPC Status: FAILED_PRECONDITION.
+    ERROR_REASON_USER_DELETED = 43;
+
+    // --- Apps (60-79) -----------------------------------------------------
+
+    // No app matches the requested id.
+    // Emitted by: AppService.*, RolesService.*, AccessService.*,
+    //             AuthService.Login.
+    // gRPC Status: NOT_FOUND.
+    ERROR_REASON_APP_NOT_FOUND = 60;
+
+    // An app with the supplied name or slug already exists.
+    // Emitted by: AppService.CreateApp, AppService.UpdateApp (rename).
+    // gRPC Status: ALREADY_EXISTS.
+    ERROR_REASON_APP_ALREADY_EXISTS = 61;
+
+    // Target app is DISABLED; login and runtime operations are rejected.
+    // Emitted by: AuthService.Login.
+    // gRPC Status: FAILED_PRECONDITION.
+    ERROR_REASON_APP_DISABLED = 62;
+
+    // Target app is in MAINTENANCE mode; user-facing operations are
+    // temporarily rejected.
+    // Emitted by: AuthService.Login.
+    // gRPC Status: FAILED_PRECONDITION.
+    ERROR_REASON_APP_IN_MAINTENANCE = 63;
+
+    // --- Roles (80-99) ----------------------------------------------------
+
+    // No role matches the requested id.
+    // Emitted by: RolesService.*, AccessService.*.
+    // gRPC Status: NOT_FOUND.
+    ERROR_REASON_ROLE_NOT_FOUND = 80;
+
+    // A role with the supplied name already exists within the target app
+    // (role names are unique per app, case-sensitive).
+    // Emitted by: RolesService.CreateRole, RolesService.UpdateRole (rename).
+    // gRPC Status: ALREADY_EXISTS.
+    ERROR_REASON_ROLE_ALREADY_EXISTS = 81;
+
+    // Target role is DISABLED. Role assignments on a disabled role are
+    // preserved but new grants are rejected.
+    // Emitted by: AccessService.GrantRoleToUser,
+    //             AccessService.BulkGrantRoles.
+    // gRPC Status: FAILED_PRECONDITION.
+    ERROR_REASON_ROLE_DISABLED = 82;
+
+    // One or more role_ids in a bulk request do not belong to the
+    // supplied app_id. Bulk operations refuse cross-app role sets as
+    // a safety guard.
+    // Emitted by: AccessService.BulkGrantRoles,
+    //             AccessService.BulkRemoveRoles.
+    // gRPC Status: FAILED_PRECONDITION.
+    ERROR_REASON_ROLE_NOT_IN_APP = 83;
+
+    // Role has active assignments and force=true was not set on the
+    // delete request.
+    // Emitted by: RolesService.PermanentlyDeleteRole.
+    // gRPC Status: FAILED_PRECONDITION.
+    ERROR_REASON_ROLE_HAS_ASSIGNMENTS = 84;
+
+    // --- Authorization (100-119) ------------------------------------------
+
+    // Caller is authenticated but not authorized for the requested
+    // operation. The accompanying ErrorInfo.metadata MAY include a
+    // `required_permission` key to help clients explain the denial.
+    // Emitted by: any mutating or privileged RPC.
+    // gRPC Status: PERMISSION_DENIED.
+    ERROR_REASON_PERMISSION_DENIED = 100;
+
+    // --- MFA (120-139) ----------------------------------------------------
+
+    // Supplied MFA code (TOTP digits or recovery code) did not match.
+    // Intentionally generic - does NOT distinguish between "wrong code"
+    // and "code for wrong method" to limit guess-and-check leakage.
+    // Emitted by: AuthService.CompleteMfaChallenge,
+    //             AuthService.ConfirmTotpEnrollment,
+    //             AuthService.DisableTotp.
+    // gRPC Status: UNAUTHENTICATED (CompleteMfaChallenge) or
+    //              PERMISSION_DENIED (Confirm/Disable Totp, where the
+    //              access_token itself is valid but the proof-of-possession
+    //              failed).
+    ERROR_REASON_MFA_CODE_INVALID = 120;
+
+    // MFA is not enrolled for the user, but an operation required it
+    // (DisableTotp, or a deployment policy requiring MFA before sensitive
+    // action).
+    // Emitted by: AuthService.DisableTotp.
+    // gRPC Status: FAILED_PRECONDITION.
+    ERROR_REASON_MFA_NOT_ENROLLED = 121;
+
+    // MFA is already enrolled and a client tried to enroll again without
+    // disabling first.
+    // Emitted by: AuthService.EnrollTotp.
+    // gRPC Status: FAILED_PRECONDITION.
+    ERROR_REASON_MFA_ALREADY_ENROLLED = 122;
+
+    // The MFA challenge_id passed to CompleteMfaChallenge is expired
+    // (TTL exceeded) or unknown (never issued / server-restarted).
+    // Emitted by: AuthService.CompleteMfaChallenge.
+    // gRPC Status: UNAUTHENTICATED.
+    ERROR_REASON_MFA_CHALLENGE_EXPIRED = 123;
+
+    // The MFA challenge_id has already been consumed or exceeded its
+    // max-attempts budget.
+    // Emitted by: AuthService.CompleteMfaChallenge.
+    // gRPC Status: FAILED_PRECONDITION.
+    ERROR_REASON_MFA_CHALLENGE_CONSUMED = 124;
+
+    // --- Recovery codes (140-159) -----------------------------------------
+
+    // Recovery code supplied to ResetPasswordWithRecoveryCode or
+    // CompleteMfaChallenge did not match any outstanding code for the
+    // target user. Intentionally generic - does NOT distinguish "wrong
+    // code" from "code was already used".
+    // Emitted by: AuthService.ResetPasswordWithRecoveryCode,
+    //             AuthService.CompleteMfaChallenge (method=RECOVERY_CODE).
+    // gRPC Status: UNAUTHENTICATED.
+    ERROR_REASON_RECOVERY_CODE_INVALID = 140;
+
+    // --- Service accounts (160-179) ---------------------------------------
+
+    // No service account matches the requested id.
+    // Emitted by: ServiceAccountService.*, AuthService.AuthenticateServiceAccount.
+    // gRPC Status: NOT_FOUND.
+    ERROR_REASON_SERVICE_ACCOUNT_NOT_FOUND = 160;
+
+    // A service account with the supplied name already exists.
+    // Emitted by: ServiceAccountService.CreateServiceAccount,
+    //             ServiceAccountService.UpdateServiceAccount (rename).
+    // gRPC Status: ALREADY_EXISTS.
+    ERROR_REASON_SERVICE_ACCOUNT_ALREADY_EXISTS = 161;
+
+    // Service account is DISABLED; authentication is rejected.
+    // Emitted by: AuthService.AuthenticateServiceAccount.
+    // gRPC Status: FAILED_PRECONDITION.
+    ERROR_REASON_SERVICE_ACCOUNT_DISABLED = 162;
+
+    // (client_id, client_secret) pair does not match a known service
+    // account. Intentionally generic (same security rationale as
+    // INVALID_CREDENTIALS).
+    // Emitted by: AuthService.AuthenticateServiceAccount.
+    // gRPC Status: UNAUTHENTICATED.
+    ERROR_REASON_INVALID_CLIENT_CREDENTIALS = 163;
+}

@@ -1,4 +1,5 @@
 version: v2
+
 modules:
   - path: proto
   - path: third_party
@@ -8,9 +9,40 @@ modules:
     breaking:
       ignore:
         - third_party
+
+# The STANDARD preset already enforces: SERVICE_SUFFIX (Service),
+# FIELD_LOWER_SNAKE_CASE, PACKAGE_VERSION_SUFFIX, ENUM_PASCAL_CASE,
+# FILE_LOWER_SNAKE_CASE, IMPORT_USED, and the DEFAULT/BASIC groups.
+#
+# Three STANDARD rules are intentionally disabled because they conflict
+# with Google AIPs (which this API follows):
+#   - RPC_REQUEST_STANDARD_NAME / RPC_RESPONSE_STANDARD_NAME:
+#       AIP-133 requires Create RPCs to return the resource itself
+#       (e.g. CreateApp -> App), not a wrapper CreateAppResponse.
+#   - RPC_REQUEST_RESPONSE_UNIQUE:
+#       AIP-135 and lifecycle RPCs (Enable/Disable/etc.) naturally share
+#       google.protobuf.Empty as a response type.
 lint:
   use:
     - STANDARD
+  except:
+    - RPC_REQUEST_STANDARD_NAME
+    - RPC_RESPONSE_STANDARD_NAME
+    - RPC_REQUEST_RESPONSE_UNIQUE
+
+# `PACKAGE` (instead of `FILE`) catches cross-file breaking changes.
+# This matters because:
+#   - sso.common.v1.ErrorReason is consumed by every other package; a
+#     value-renumber there is wire-breaking across the whole surface but
+#     would be invisible under FILE-scoped checks;
+#   - sso.access.v1 imports sso.roles.v1.Role and sso.auth.v1 imports
+#     sso.identity.v1.User; renaming or restructuring those types in
+#     their owning files breaks the importers and PACKAGE catches it.
 breaking:
   use:
-    - FILE
+    - PACKAGE
+
+# protovalidate is vendored under third_party/ (see modules above) so the
+# BSR dep is no longer required - keeping both would risk descriptor
+# version drift between the vendored copy and the BSR-resolved one.
+deps: []

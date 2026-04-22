@@ -1,0 +1,377 @@
+syntax = "proto3";
+
+package sso.identity.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/Nergous/sso_protos/gen/go/sso/identity/v1;ssoidentityv1";
+
+// ============================================================================
+// IdentityService - User Identity Management API
+// ============================================================================
+// Provides identity directory operations for authentication and authorization.
+//
+// This service manages user identity records only.
+// It does NOT handle sessions, tokens, or authentication flows.
+//
+// Lifecycle:
+//   ACTIVE   - active user
+//   BLOCKED  - temporarily disabled (reversible via EnableUser)
+//   DELETED  - logically deleted (irreversible via standard API)
+//
+// Security:
+//   All methods require authentication; access is role-based.
+// ============================================================================
+service IdentityService {
+
+    // GetUser returns identity record by user ID.
+    //
+    // Errors:
+    //   NOT_FOUND           - user with given user_id does not exist
+    //   PERMISSION_DENIED   - caller lacks USER_READ role
+    //   INVALID_ARGUMENT    - user_id is not a valid UUID
+    rpc GetUser(GetUserRequest) returns (User);
+
+    // ListUsers returns paginated identity records.
+    //
+    // By default DELETED users are excluded unless explicitly requested
+    // via filters.statuses.
+    //
+    // Errors:
+    //   PERMISSION_DENIED   - caller lacks USER_READ_ALL role
+    //   INVALID_ARGUMENT    - invalid page_token / page_size / filters
+    rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+
+    // UpdateUser partially updates an identity record.
+    //
+    // The set of fields to update is driven by update_mask (AIP-134).
+    // An empty update_mask is rejected with INVALID_ARGUMENT.
+    //
+    // Optimistic concurrency: if etag is provided and does not match the
+    // server-side value, the request is rejected with ABORTED.
+    //
+    // Errors:
+    //   NOT_FOUND           - user does not exist
+    //   PERMISSION_DENIED   - caller lacks USER_WRITE role
+    //   INVALID_ARGUMENT    - empty mask, unknown field in mask, invalid value
+    //   ABORTED             - etag mismatch (concurrent modification)
+    //   FAILED_PRECONDITION - user is DELETED
+    rpc UpdateUser(UpdateUserRequest) returns (User);
+
+    // DisableUser sets user status to BLOCKED. Idempotent.
+    //
+    // If allow_missing=true, NOT_FOUND is converted to a successful no-op
+    // (AIP-135 idempotence).
+    //
+    // Errors:
+    //   NOT_FOUND           - user does not exist (suppressed if allow_missing)
+    //   FAILED_PRECONDITION - user is DELETED
+    //   PERMISSION_DENIED   - caller lacks USER_WRITE role
+    rpc DisableUser(DisableUserRequest) returns (google.protobuf.Empty);
+
+    // EnableUser sets user status to ACTIVE. Idempotent.
+    //
+    // If allow_missing=true, NOT_FOUND is converted to a successful no-op.
+    //
+    // Errors:
+    //   NOT_FOUND           - user does not exist (suppressed if allow_missing)
+    //   FAILED_PRECONDITION - user is DELETED (cannot be re-enabled via this API)
+    //   PERMISSION_DENIED   - caller lacks USER_WRITE role
+    rpc EnableUser(EnableUserRequest) returns (google.protobuf.Empty);
+
+    // SoftDeleteUser marks user as DELETED (logical deletion). Idempotent.
+    //
+    // User data is retained; the account cannot authenticate and is
+    // hidden from default ListUsers results.
+    // If allow_missing=true, NOT_FOUND is converted to a successful no-op.
+    //
+    // Errors:
+    //   NOT_FOUND           - user does not exist (suppressed if allow_missing)
+    //   PERMISSION_DENIED   - caller lacks USER_DELETE role
+    rpc SoftDeleteUser(SoftDeleteUserRequest) returns (google.protobuf.Empty);
+
+    // PermanentlyDeleteUser removes all user data irreversibly.
+    //
+    // Requires an etag matching the current server-side User.etag as an
+    // explicit concurrency-safe confirmation (stronger than a boolean
+    // force flag: prevents accidental deletion based on a stale read or
+    // a copy-pasted request body). Typically invoked only after
+    // SoftDeleteUser and only by privileged roles.
+    //
+    // Errors:
+    //   NOT_FOUND           - user does not exist
+    //   FAILED_PRECONDITION - user is not in DELETED status
+    //   ABORTED             - supplied etag does not match current User.etag
+    //                         (ERROR_REASON_ETAG_MISMATCH)
+    //   PERMISSION_DENIED   - caller lacks USER_PURGE role
+    //   INVALID_ARGUMENT    - etag missing or malformed
+    rpc PermanentlyDeleteUser(PermanentlyDeleteUserRequest) returns (google.protobuf.Empty);
+}
+
+// ============================================================================
+// ListUsersOrderBy - supported sort orders for ListUsers (AIP-132 typed)
+// ============================================================================
+// Using an enum over a free-text string gives clients compile-time typing
+// and prevents typos. A tie-breaker on user_id is appended server-side
+// regardless of the selected order.
+enum ListUsersOrderBy {
+    // Server default (currently CREATED_AT_DESC).
+    LIST_USERS_ORDER_BY_UNSPECIFIED = 0;
+
+    LIST_USERS_ORDER_BY_CREATED_AT_DESC = 1;
+    LIST_USERS_ORDER_BY_CREATED_AT_ASC = 2;
+    LIST_USERS_ORDER_BY_USER_ID_DESC = 3;
+    LIST_USERS_ORDER_BY_USER_ID_ASC = 4;
+    LIST_USERS_ORDER_BY_USERNAME_DESC = 5;
+    LIST_USERS_ORDER_BY_USERNAME_ASC = 6;
+
+    // Reserved for future sort keys (e.g. LAST_LOGIN_AT, EMAIL).
+    reserved 100 to 199;
+}
+
+// ============================================================================
+// UserStatus - lifecycle state of a user identity
+// ============================================================================
+enum UserStatus {
+    USER_STATUS_UNSPECIFIED = 0;
+
+    // User is enabled and can access the system.
+    USER_STATUS_ACTIVE = 1;
+
+    // User is temporarily disabled (reversible via EnableUser).
+    USER_STATUS_BLOCKED = 2;
+
+    // User is logically deleted; excluded from default listings.
+    USER_STATUS_DELETED = 3;
+
+    // Reserved for future lifecycle states (e.g. PENDING_VERIFICATION,
+    // ARCHIVED). Adding a value here is a non-breaking change.
+    reserved 100 to 199;
+}
+
+// ============================================================================
+// User - identity record (response type)
+// ============================================================================
+// Output-only timestamps and etag are set by the server and ignored on input.
+message User {
+    // Unique identifier (RFC 4122 UUID).
+    string user_id = 1;
+
+    // User email address. May be empty for soft-deleted records.
+    string email = 2;
+
+    // Unique username (1-128 chars).
+    string username = 3;
+
+    // Display name (non-unique, 1-128 chars).
+    string display_name = 4;
+
+    // Avatar image URL (0-2048 chars). Absent if not set;
+    // treat missing and empty string as equivalent.
+    optional string avatar_url = 5;
+
+    // Current lifecycle status.
+    UserStatus status = 6;
+
+    // Opaque version token for optimistic concurrency (AIP-154).
+    // Send back in UpdateUserRequest.etag to detect concurrent modifications.
+    string etag = 7;
+
+    // Account creation timestamp (output-only).
+    google.protobuf.Timestamp created_at = 8;
+
+    // Last update timestamp (output-only).
+    google.protobuf.Timestamp updated_at = 9;
+
+    // Last successful login timestamp. Absent if user never logged in.
+    optional google.protobuf.Timestamp last_login_at = 10;
+
+    // BCP 47 language tag (e.g. "en-US", "ru-RU"). Empty string if not
+    // set; server treats missing and empty as "use system default".
+    // Format is validated loosely at the proto layer (length only);
+    // strict BCP 47 parsing is the server's responsibility.
+    string locale = 11 [(buf.validate.field).string.max_len = 35];
+
+    // IANA time-zone identifier (e.g. "Europe/Moscow", "UTC"). Empty
+    // string if not set. Format validated loosely here; strict IANA
+    // membership check is done server-side.
+    string timezone = 12 [(buf.validate.field).string.max_len = 64];
+}
+
+// ============================================================================
+// GetUserRequest
+// ============================================================================
+message GetUserRequest {
+    string user_id = 1 [(buf.validate.field).string.uuid = true];
+}
+
+// ============================================================================
+// UserFilters - filtering options for ListUsers
+// ============================================================================
+// Semantics:
+//   - `search` is a case-insensitive fuzzy match across email / username /
+//     display_name (OR between fields).
+//   - Repeated fields apply OR within the field and AND across different fields.
+//   - If `statuses` is empty, USER_STATUS_DELETED is excluded by default.
+message UserFilters {
+    // Free-text search.
+    string search = 1 [(buf.validate.field).string.max_len = 128];
+
+    repeated string emails = 2 [
+        (buf.validate.field).repeated.max_items = 100,
+        (buf.validate.field).repeated.items.string.email = true
+    ];
+
+    repeated string usernames = 3 [
+        (buf.validate.field).repeated.max_items = 100,
+        (buf.validate.field).repeated.items.string.max_len = 128
+    ];
+
+    repeated string display_names = 4 [
+        (buf.validate.field).repeated.max_items = 100,
+        (buf.validate.field).repeated.items.string.max_len = 128
+    ];
+
+    repeated UserStatus statuses = 5 [
+        (buf.validate.field).repeated.max_items = 4
+    ];
+}
+
+// ============================================================================
+// ListUsersRequest
+// ============================================================================
+message ListUsersRequest {
+    // Page size (0-1000). 0 means "server default". Negative values are
+    // rejected with INVALID_ARGUMENT (AIP-158).
+    int32 page_size = 1 [
+        (buf.validate.field).int32.gte = 0,
+        (buf.validate.field).int32.lte = 1000
+    ];
+
+    // Opaque pagination token from previous response. Empty = first page.
+    string page_token = 2;
+
+    // Optional filters.
+    UserFilters filters = 3;
+
+    // Typed sort order (AIP-132). UNSPECIFIED selects the server default.
+    // Tie-breaker user_id is always appended implicitly.
+    ListUsersOrderBy order_by = 4;
+}
+
+// ============================================================================
+// ListUsersResponse
+// ============================================================================
+message ListUsersResponse {
+    // Users for current page.
+    repeated User users = 1;
+
+    // Opaque token for next page. Empty if this was the last page.
+    string next_page_token = 2;
+
+    // Total number of users matching the request across all pages (may
+    // be approximate).
+    //
+    // Absence semantics: the field is `optional` so "not computed" is a
+    // distinct state from "zero matches". Unset => server did not compute
+    // a total (e.g. filter too expensive); Set to 0 => genuinely no
+    // matches.
+    optional int32 total_size = 3;
+}
+
+// ============================================================================
+// UpdateUserRequest - FieldMask-based partial update (AIP-134)
+// ============================================================================
+// Only fields listed in update_mask are applied. A field omitted from the
+// mask is left unchanged; a field present in the mask with an empty value
+// clears the field (where permitted).
+//
+// Valid mask paths (SERVER MUST REJECT any other path with INVALID_ARGUMENT):
+//   email
+//   username
+//   display_name
+//   avatar_url
+//   locale
+//   timezone
+//
+// Explicitly INVALID mask paths (server MUST reject):
+//   user_id       (immutable identity)
+//   status        (lifecycle; use Disable/Enable/Delete RPCs instead)
+//   etag          (server-managed; use the top-level etag field)
+//   created_at, updated_at, last_login_at (output-only timestamps)
+//
+// The `User user` payload MAY carry values for any field (including
+// immutable ones) but the server MUST IGNORE any field whose path is not
+// in update_mask. Conversely, populating an otherwise-valid field like
+// `status` in `user` without also placing "status" in the mask MUST be
+// a silent no-op, never a hidden write.
+message UpdateUserRequest {
+    // Target user (required).
+    string user_id = 1 [(buf.validate.field).string.uuid = true];
+
+    // New field values. Fields not referenced by update_mask are ignored.
+    User user = 2;
+
+    // Set of field paths to apply from `user`. Must be non-empty.
+    google.protobuf.FieldMask update_mask = 3;
+
+    // Required optimistic concurrency token.
+    // "*" means unconditional update.
+    string etag = 4 [(buf.validate.field).string.min_len = 1];
+}
+
+// ============================================================================
+// Lifecycle-transition requests
+// ============================================================================
+// DisableUserRequest sets user status to BLOCKED.
+message DisableUserRequest {
+    string user_id = 1 [(buf.validate.field).string.uuid = true];
+
+    // When true, a missing user_id returns OK instead of NOT_FOUND,
+    // so retries are safe after partial-success scenarios (AIP-135).
+    bool allow_missing = 2;
+}
+
+// EnableUserRequest reactivates a BLOCKED user.
+message EnableUserRequest {
+    string user_id = 1 [(buf.validate.field).string.uuid = true];
+
+    // See DisableUserRequest.allow_missing.
+    bool allow_missing = 2;
+}
+
+// SoftDeleteUserRequest marks a user as DELETED (logical deletion).
+message SoftDeleteUserRequest {
+    string user_id = 1 [(buf.validate.field).string.uuid = true];
+
+    // See DisableUserRequest.allow_missing.
+    bool allow_missing = 2;
+}
+
+// PermanentlyDeleteUserRequest requires an etag matching the current
+// User.etag as explicit, concurrency-safe confirmation.
+//
+// Why etag instead of a boolean force flag:
+//   - a stale copy of the request body cannot wipe a user who was
+//     modified in the meantime (the etag will no longer match),
+//   - the client had to have observed the current state (via Get/List)
+//     to obtain the etag, so the deletion is always a deliberate act,
+//   - mismatch surfaces as ABORTED (ERROR_REASON_ETAG_MISMATCH), the
+//     same signal used by UpdateUser.
+message PermanentlyDeleteUserRequest {
+    string user_id = 1 [(buf.validate.field).string.uuid = true];
+
+    // Current User.etag observed by the caller. "*" is NOT accepted
+    // here - hard-delete must be a deliberate, non-unconditional act.
+    string etag = 2 [
+        (buf.validate.field).string.min_len = 1,
+        (buf.validate.field).cel = {
+            id: "etag.no_wildcard",
+            message: "etag '*' is not permitted for PermanentlyDeleteUser",
+            expression: "this != '*'"
+        }
+    ];
+}

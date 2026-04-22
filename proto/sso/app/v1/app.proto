@@ -1,0 +1,337 @@
+syntax = "proto3";
+
+package sso.app.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/field_mask.proto";
+
+option go_package = "github.com/Nergous/sso_protos/gen/go/sso/app/v1;ssoappv1";
+
+// ============================================================================
+// AppService - App Management API
+// ============================================================================
+// Provides full CRUD operations for application management in Single Sign-On system.
+// Each app represents a service that can be accessed via SSO authentication.
+//
+// Lifecycle:
+//  ACTIVE - active app
+//  DISABLED - disabled app
+//  MAINTENANCE - app on maintenance
+//
+// Possible errors:
+//   - NotFound: app not found
+//   - InvalidArgument: invalid request parameters
+//   - PermissionDenied: insufficient permissions
+//   - AlreadyExists: app with same name already exists
+// ============================================================================
+service AppService {
+    // GetApp returns application by UUID
+    // Request: valid UUID format
+    // Response: full App object
+    // Error: NotFound if app doesn't exist
+    rpc GetApp(GetAppRequest) returns (App);
+
+    // ListApps returns paginated list of applications with filtering
+    // Supports: search across name/link, filter by statuses
+    // Use page_token for pagination (empty for first page)
+    // Max page_size: 1000 items per page
+    rpc ListApps(ListAppsRequest) returns (ListAppsResponse);
+
+    // CreateApp registers a new application in SSO
+    // Required fields: name (1-128 chars), link (valid URI)
+    // Returns created App object with generated UUID and timestamps
+    rpc CreateApp(CreateAppRequest) returns (App);
+
+    // UpdateApp partially updates an application.
+    // The set of fields to update is driven by update_mask (AIP-134).
+    // Optimistic concurrency: if etag is provided and does not match the
+    // server-side value, the request is rejected with ABORTED.
+    // Returns updated App object.
+    rpc UpdateApp(UpdateAppRequest) returns (App);
+
+    // EnterMaintenanceMode transitions app status to MAINTENANCE. Idempotent.
+    // If allow_missing=true, NOT_FOUND is converted to a successful no-op.
+    rpc EnterMaintenanceMode(EnterMaintenanceModeRequest) returns (google.protobuf.Empty);
+
+    // ExitMaintenanceMode returns app from MAINTENANCE back to ACTIVE. Idempotent.
+    // If allow_missing=true, NOT_FOUND is converted to a successful no-op.
+    rpc ExitMaintenanceMode(ExitMaintenanceModeRequest) returns (google.protobuf.Empty);
+
+    // DisableApp sets app status to DISABLED. Reversible via EnableApp. Idempotent.
+    // If allow_missing=true, NOT_FOUND is converted to a successful no-op.
+    rpc DisableApp(DisableAppRequest) returns (google.protobuf.Empty);
+
+    // EnableApp sets app status to ACTIVE (reverses DisableApp). Idempotent.
+    // If allow_missing=true, NOT_FOUND is converted to a successful no-op.
+    rpc EnableApp(EnableAppRequest) returns (google.protobuf.Empty);
+
+    // PermanentlyDeleteApp removes all app data irreversibly. Cascade:
+    // all roles defined in this app and all their role assignments in
+    // AccessService are removed atomically.
+    //
+    // Destructive confirmation: requires an etag matching the current
+    // App.etag (stronger than a boolean; prevents accidental deletion
+    // based on a stale read).
+    //
+    // Errors:
+    //   NOT_FOUND         - app does not exist
+    //   ABORTED           - supplied etag does not match current App.etag
+    //                       (ERROR_REASON_ETAG_MISMATCH)
+    //   PERMISSION_DENIED - caller lacks APP_DELETE role
+    //   INVALID_ARGUMENT  - etag missing or malformed
+    rpc PermanentlyDeleteApp(PermanentlyDeleteAppRequest) returns (google.protobuf.Empty);
+}
+
+// ============================================================================
+// ListAppsOrderBy - supported sort orders for ListApps (AIP-132 typed)
+// ============================================================================
+enum ListAppsOrderBy {
+    // Server default (currently CREATED_AT_DESC).
+    LIST_APPS_ORDER_BY_UNSPECIFIED = 0;
+
+    LIST_APPS_ORDER_BY_CREATED_AT_DESC = 1;
+    LIST_APPS_ORDER_BY_CREATED_AT_ASC = 2;
+    LIST_APPS_ORDER_BY_APP_ID_DESC = 3;
+    LIST_APPS_ORDER_BY_APP_ID_ASC = 4;
+    LIST_APPS_ORDER_BY_NAME_DESC = 5;
+    LIST_APPS_ORDER_BY_NAME_ASC = 6;
+
+    // Reserved for future sort keys (e.g. SLUG).
+    reserved 100 to 199;
+}
+
+// ============================================================================
+// AppStatus - Application status enum
+// ============================================================================
+enum AppStatus {
+    APP_STATUS_UNSPECIFIED = 0;
+    // ACTIVE - application is fully operational and accessible via SSO
+    APP_STATUS_ACTIVE = 1;
+    // DISABLED - application is disabled (reversible via EnableApp)
+    APP_STATUS_DISABLED = 2;
+    // MAINTENANCE - application is under maintenance, temporarily unavailable
+    APP_STATUS_MAINTENANCE = 3;
+
+    // Reserved for future lifecycle states (e.g. ARCHIVED, SUSPENDED).
+    reserved 100 to 199;
+}
+
+// ============================================================================
+// App - Complete application model
+// ============================================================================
+// Field-level constraints are enforced on input (CreateApp, UpdateApp)
+// and apply to the same named paths in UpdateAppRequest.update_mask.
+message App {
+    // Unique application identifier (RFC 4122 UUID format). Server-assigned
+    // on CreateApp; ignored on input.
+    string app_id = 1;
+
+    // Human-readable application name (1-128 characters, unique).
+    string name = 2 [
+        (buf.validate.field).string.min_len = 1,
+        (buf.validate.field).string.max_len = 128
+    ];
+
+    // Entry-point URL of the application (valid URI, max 2048 chars).
+    // Example: "https://myapp.example.com/dashboard".
+    string link = 3 [
+        (buf.validate.field).string.uri = true,
+        (buf.validate.field).string.max_len = 2048
+    ];
+
+    // Current application status. Server-assigned on create (always ACTIVE);
+    // on update this path is invalid - use Enable/Disable/EnterMaintenance
+    // /ExitMaintenance RPCs.
+    AppStatus status = 4;
+
+    // Opaque version token for optimistic concurrency (AIP-154).
+    // Server-managed; send the observed value back in
+    // UpdateAppRequest.etag / PermanentlyDeleteAppRequest.etag.
+    string etag = 5;
+
+    // Timestamp of app creation (output-only).
+    google.protobuf.Timestamp created_at = 6;
+
+    // Timestamp of last app update (output-only).
+    google.protobuf.Timestamp updated_at = 7;
+
+    // URL-safe stable identifier used in human-facing contexts (CLI,
+    // URL paths like /apps/{slug}/login). Unique across all apps.
+    // Pattern: starts with a lowercase letter, 3-64 chars total,
+    // lowercase letters / digits / hyphens only.
+    // Immutable after CreateApp - not updatable via UpdateApp.
+    string slug = 8 [
+        (buf.validate.field).string.pattern = "^[a-z][a-z0-9-]{2,63}$"
+    ];
+}
+
+// ============================================================================
+// GetAppRequest - Request for GetApp RPC
+// ============================================================================
+message GetAppRequest {
+    // UUID of the application to retrieve
+    string app_id = 1 [(buf.validate.field).string.uuid = true];
+}
+
+// ============================================================================
+// AppFilters - Filtering options for ListApps
+// ============================================================================
+message AppFilters {
+    // Full-text search across name, link, and slug fields.
+    // Length aligned with UserFilters.search / RoleFilters.search.
+    string search = 1 [(buf.validate.field).string.max_len = 128];
+
+    // Filter by application statuses (OR logic)
+    repeated AppStatus statuses = 2 [(buf.validate.field).repeated.max_items = 4];
+}
+
+// ============================================================================
+// ListAppsRequest - Paginated request for ListApps RPC
+// ============================================================================
+message ListAppsRequest {
+    // Maximum number of items to return per page (0-1000).
+    // Use 0 for default page size. Negative values rejected with
+    // INVALID_ARGUMENT (AIP-158).
+    int32 page_size = 1 [
+        (buf.validate.field).int32.gte = 0,
+        (buf.validate.field).int32.lte = 1000
+    ];
+
+    // Opaque pagination token from previous response
+    // Empty string for first page
+    string page_token = 2;
+
+    // Optional filters to apply to the list
+    AppFilters filters = 3;
+
+    // Typed sort order (AIP-132). UNSPECIFIED selects the server default.
+    // Tie-breaker app_id is always appended implicitly.
+    ListAppsOrderBy order_by = 4;
+}
+
+// ============================================================================
+// ListAppsResponse - Paginated response for ListApps RPC
+// ============================================================================
+message ListAppsResponse {
+    // Page of applications matching the request
+    repeated App apps = 1;
+
+    // Opaque token to fetch the next page
+    // Empty string if this was the last page
+    string next_page_token = 2;
+
+    // Total number of apps matching the request across all pages.
+    // May be approximate. Unset => server did not compute a total;
+    // set to 0 => genuinely no matches.
+    optional int32 total_size = 3;
+}
+
+// ============================================================================
+// CreateAppRequest - AIP-133 create
+// ============================================================================
+// Shape: the resource to create (`app`). The server populates app_id,
+// status (always ACTIVE on creation), etag, created_at, updated_at;
+// any client-supplied values for those fields are ignored.
+//
+// Fields the client MUST populate in `app`:
+//   name, link, slug
+// Field-level constraints (min/max/pattern) live on the App message;
+// see App.name / App.link / App.slug.
+message CreateAppRequest {
+    // App definition. Server-managed fields are ignored.
+    App app = 1;
+}
+
+// ============================================================================
+// UpdateAppRequest - FieldMask-based partial update (AIP-134)
+// ============================================================================
+// Only fields listed in update_mask are applied. A field omitted from the
+// mask is left unchanged; a field present in the mask with an empty value
+// clears the field (where permitted).
+//
+// Valid mask paths (SERVER MUST REJECT any other path with INVALID_ARGUMENT):
+//   name
+//   link
+//
+// Explicitly INVALID mask paths (server MUST reject):
+//   app_id              (immutable identity)
+//   slug                (immutable after creation)
+//   status              (lifecycle; use Enable/Disable/EnterMaintenance
+//                        /ExitMaintenance RPCs)
+//   etag                (server-managed; use the top-level etag field)
+//   created_at, updated_at (output-only timestamps)
+//
+// The `App app` payload MAY carry values for any field (including
+// immutable ones); the server MUST IGNORE any field whose path is not in
+// update_mask. Populating `status` or `slug` in `app` without placing
+// them in the mask MUST be a silent no-op, never a hidden write.
+message UpdateAppRequest {
+    // UUID of the application to update (required).
+    string app_id = 1 [(buf.validate.field).string.uuid = true];
+
+    // New field values. Fields not referenced by update_mask are ignored.
+    App app = 2;
+
+    // Set of field paths to apply from `app`. Must be non-empty.
+    google.protobuf.FieldMask update_mask = 3;
+
+    // Required optimistic concurrency token.
+    // "*" means unconditional update.
+    string etag = 4 [(buf.validate.field).string.min_len = 1];
+}
+
+// ============================================================================
+// Lifecycle-transition requests
+// ============================================================================
+// EnableAppRequest reactivates a DISABLED app.
+message EnableAppRequest {
+    string app_id = 1 [(buf.validate.field).string.uuid = true];
+
+    // When true, a missing app_id returns OK instead of NOT_FOUND,
+    // so retries are safe after partial-success scenarios (AIP-135).
+    bool allow_missing = 2;
+}
+
+// EnterMaintenanceModeRequest transitions app to MAINTENANCE status.
+message EnterMaintenanceModeRequest {
+    string app_id = 1 [(buf.validate.field).string.uuid = true];
+
+    // See EnableAppRequest.allow_missing.
+    bool allow_missing = 2;
+}
+
+// ExitMaintenanceModeRequest returns app from MAINTENANCE back to ACTIVE.
+message ExitMaintenanceModeRequest {
+    string app_id = 1 [(buf.validate.field).string.uuid = true];
+
+    // See EnableAppRequest.allow_missing.
+    bool allow_missing = 2;
+}
+
+// DisableAppRequest sets app status to DISABLED (reversible via EnableApp).
+message DisableAppRequest {
+    string app_id = 1 [(buf.validate.field).string.uuid = true];
+
+    // See EnableAppRequest.allow_missing.
+    bool allow_missing = 2;
+}
+
+// PermanentlyDeleteAppRequest requires an etag matching the current
+// App.etag as explicit, concurrency-safe confirmation. Cascade is
+// implicit: all roles in this app and all role assignments in
+// AccessService are removed atomically with the app.
+message PermanentlyDeleteAppRequest {
+    string app_id = 1 [(buf.validate.field).string.uuid = true];
+
+    // Current App.etag observed by the caller. "*" is NOT accepted.
+    string etag = 2 [
+        (buf.validate.field).string.min_len = 1,
+        (buf.validate.field).cel = {
+            id: "etag.no_wildcard",
+            message: "etag '*' is not permitted for PermanentlyDeleteApp",
+            expression: "this != '*'"
+        }
+    ];
+}
