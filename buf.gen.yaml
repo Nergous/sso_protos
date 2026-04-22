@@ -1,12 +1,32 @@
 version: v2
+
 managed:
   enabled: true
+
 plugins:
+  # Core message types.
   - local: protoc-gen-go
     out: gen/go
-    opt:
-      - paths=source_relative
+    opt: paths=source_relative
+
+  # gRPC server/client stubs.
   - local: protoc-gen-go-grpc
     out: gen/go
+    opt: paths=source_relative
+
+  # Optional: static Markdown API reference. Uncomment after installing
+  # protoc-gen-doc (https://github.com/pseudomuto/protoc-gen-doc):
+  #   go install github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@latest
+  - local: protoc-gen-doc
+    out: docs/api
     opt:
-      - paths=source_relative
+      - markdown,api.md
+    strategy: all
+
+# Inputs:
+#   The `proto` module under buf.yaml is the source of truth. The
+#   vendored protovalidate copy under third_party/ is referenced by
+#   imports but should NOT generate Go code into gen/go (it's already
+#   provided at runtime by buf.build/go/protovalidate).
+inputs:
+  - directory: proto

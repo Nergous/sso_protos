@@ -5,6 +5,9 @@
 .idea/
 .vscode/
 *.iml
+docs/diagrams
+.claude/
+.github/
 
 # OS
 .DS_Store
