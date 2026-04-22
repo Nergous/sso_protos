@@ -1,0 +1,291 @@
+syntax = "proto3";
+
+package sso.audit.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/Nergous/sso_protos/gen/go/sso/audit/v1;ssoauditv1";
+
+// ============================================================================
+// AuditService - Security-relevant event log
+// ============================================================================
+// Append-only record of security-relevant actions across the SSO surface:
+//   - authentication events (login success/failure, password change,
+//     MFA enrollment, recovery-code use)
+//   - identity lifecycle (user registered, blocked, deleted)
+//   - RBAC changes (role created/updated/disabled/deleted, role granted/
+//     revoked)
+//   - app lifecycle (app created, disabled, deleted)
+//   - session events (session created / revoked)
+//   - service-account events (created, rotated, disabled)
+//
+// Purpose:
+//   - incident response ("who granted this role, from what IP")
+//   - compliance (append-only, tamper-evident event trail)
+//   - debugging ("why does user X have permission Y")
+//
+// Semantics:
+//   - events are immutable after write; there is NO UpdateAuditEvent
+//     nor DeleteAuditEvent RPC by design;
+//   - write path is internal: SSO services write events as a side-effect
+//     of user-facing RPCs, not via a public API here;
+//   - read path is this service.
+//
+// Ordering:
+//   ListAuditEvents is ordered by occurred_at DESC (newest first) with
+//   event_id as an implicit tie-breaker. No user-selectable ordering -
+//   a security log is read chronologically.
+//
+// Security:
+//   All RPCs are authenticated; access is role-based.
+//     AUDIT_READ  - GetAuditEvent, ListAuditEvents
+//
+//   Deployments SHOULD restrict AUDIT_READ tightly (security-team /
+//   compliance-team only), because the log may contain sensitive
+//   metadata (IPs, user agents, subject identifiers).
+// ============================================================================
+service AuditService {
+    // GetAuditEvent returns a single event by UUID.
+    //
+    // Errors:
+    //   NOT_FOUND         - event does not exist
+    //   PERMISSION_DENIED - caller lacks AUDIT_READ
+    //   INVALID_ARGUMENT  - event_id is not a valid UUID
+    rpc GetAuditEvent(GetAuditEventRequest) returns (AuditEvent);
+
+    // ListAuditEvents returns a paginated chronological slice of the
+    // audit log, optionally filtered.
+    //
+    // Errors:
+    //   PERMISSION_DENIED - caller lacks AUDIT_READ
+    //   INVALID_ARGUMENT  - invalid page_size / page_token / filters
+    rpc ListAuditEvents(ListAuditEventsRequest) returns (ListAuditEventsResponse);
+}
+
+// ============================================================================
+// ActorType - who performed the action
+// ============================================================================
+enum ActorType {
+    ACTOR_TYPE_UNSPECIFIED = 0;
+
+    // A human user (Actor.id = user_id UUID).
+    ACTOR_TYPE_USER = 1;
+
+    // A service account (Actor.id = service_account_id UUID).
+    ACTOR_TYPE_SERVICE_ACCOUNT = 2;
+
+    // Server-internal actor (background job, cascade delete, system
+    // migration). Actor.id is empty; the event_type describes the source.
+    ACTOR_TYPE_SYSTEM = 3;
+
+    // An unauthenticated caller (e.g. failed Login, anonymous
+    // ResetPasswordWithRecoveryCode). Actor.id is empty; Actor.ip_address
+    // is the primary signal.
+    ACTOR_TYPE_ANONYMOUS = 4;
+
+    reserved 100 to 199;
+}
+
+// ============================================================================
+// SubjectType - what the action targeted
+// ============================================================================
+enum SubjectType {
+    SUBJECT_TYPE_UNSPECIFIED = 0;
+
+    SUBJECT_TYPE_USER = 1;
+    SUBJECT_TYPE_ROLE = 2;
+    SUBJECT_TYPE_APP = 3;
+    SUBJECT_TYPE_SESSION = 4;
+    SUBJECT_TYPE_ROLE_ASSIGNMENT = 5;
+    SUBJECT_TYPE_SERVICE_ACCOUNT = 6;
+
+    reserved 100 to 199;
+}
+
+// ============================================================================
+// AuditOutcome - how the action resolved
+// ============================================================================
+enum AuditOutcome {
+    AUDIT_OUTCOME_UNSPECIFIED = 0;
+
+    // The action completed as intended.
+    AUDIT_OUTCOME_SUCCESS = 1;
+
+    // The action failed for a non-authorization reason (validation,
+    // not-found, conflict, server error). `reason` carries the
+    // ErrorReason name.
+    AUDIT_OUTCOME_FAILURE = 2;
+
+    // The action was rejected on authorization grounds (permission
+    // denied, role lacking). `reason` carries PERMISSION_DENIED or a
+    // domain-specific code.
+    AUDIT_OUTCOME_DENIED = 3;
+
+    reserved 100 to 199;
+}
+
+// ============================================================================
+// Actor - who performed the action
+// ============================================================================
+message Actor {
+    ActorType type = 1;
+
+    // UUID of the user or service account. Empty for SYSTEM / ANONYMOUS.
+    string id = 2;
+
+    // Peer IP address observed by the server. Always populated for
+    // ANONYMOUS actors; may be populated for USER / SERVICE_ACCOUNT
+    // actors depending on deployment (set by the edge proxy or the
+    // gRPC server). Empty for SYSTEM.
+    string ip_address = 3;
+
+    // User-Agent string from gRPC metadata. May be empty.
+    string user_agent = 4;
+}
+
+// ============================================================================
+// Subject - what the action targeted
+// ============================================================================
+message Subject {
+    SubjectType type = 1;
+
+    // UUID of the subject. Empty for events that have no single
+    // subject (rare: e.g. a listing RPC).
+    string id = 2;
+
+    // Scoping app context, if any. For role grants this is the role's
+    // app_id; for user-level events (login, password change) it is the
+    // app the user logged into; empty for cross-app actions.
+    string app_id = 3;
+}
+
+// ============================================================================
+// AuditEvent - one immutable record
+// ============================================================================
+// Canonical event_type values (informative; the enum is intentionally
+// open so new domains can add types without a schema bump):
+//   user.registered, user.login.success, user.login.failed,
+//   user.logout, user.password_changed, user.password_reset,
+//   user.blocked, user.unblocked, user.deleted, user.purged,
+//   user.recovery_codes_generated,
+//   user.mfa.totp.enrolled, user.mfa.totp.disabled,
+//   user.mfa.challenge.issued, user.mfa.challenge.completed,
+//   user.mfa.challenge.failed,
+//   session.created, session.revoked, session.revoked_all,
+//   role.created, role.updated, role.disabled, role.enabled,
+//   role.deleted,
+//   role.granted, role.revoked,
+//   app.created, app.updated, app.disabled, app.enabled,
+//   app.maintenance.entered, app.maintenance.exited, app.deleted,
+//   service_account.created, service_account.credentials_rotated,
+//   service_account.disabled, service_account.enabled,
+//   service_account.deleted, service_account.authenticated
+message AuditEvent {
+    // Event UUID. Immutable.
+    string event_id = 1;
+
+    // When the event was recorded (server time).
+    google.protobuf.Timestamp occurred_at = 2;
+
+    // Dotted namespace / action. Stable strings; see the comment above
+    // the message for canonical values.
+    string event_type = 3;
+
+    // Who did it.
+    Actor actor = 4;
+
+    // What it targeted.
+    Subject subject = 5;
+
+    // How it resolved.
+    AuditOutcome outcome = 6;
+
+    // If outcome != SUCCESS, the ErrorReason name (e.g.
+    // "ERROR_REASON_INVALID_CREDENTIALS") or a free-form server code.
+    // Empty on success.
+    string reason = 7;
+
+    // Free-form structured metadata specific to the event_type.
+    // Examples:
+    //   role.granted:   {"role_id": "...", "role_name": "billing-admin"}
+    //   user.login.failed: {"identifier_kind": "email"}
+    //   session.created:   {"device_name": "Dmitry's iPhone", "country": "RU"}
+    //
+    // Keys and values are both strings. Total encoded size SHOULD be
+    // kept under 4 KiB per event.
+    map<string, string> metadata = 8;
+}
+
+// ============================================================================
+// GetAuditEventRequest
+// ============================================================================
+message GetAuditEventRequest {
+    string event_id = 1 [(buf.validate.field).string.uuid = true];
+}
+
+// ============================================================================
+// AuditFilters - filtering options for ListAuditEvents
+// ============================================================================
+// All filters are AND-combined. Within a repeated field, semantics is OR.
+message AuditFilters {
+    // Events with occurred_at >= from_time are included. Unset = no
+    // lower bound.
+    google.protobuf.Timestamp from_time = 1;
+
+    // Events with occurred_at < to_time are included. Unset = no upper
+    // bound (up to "now").
+    google.protobuf.Timestamp to_time = 2;
+
+    // OR-filter on event_type (exact match). Max 32 entries.
+    repeated string event_types = 3 [
+        (buf.validate.field).repeated.max_items = 32,
+        (buf.validate.field).repeated.items.string.min_len = 1,
+        (buf.validate.field).repeated.items.string.max_len = 128
+    ];
+
+    // Filter by actor.
+    ActorType actor_type = 4;
+    string actor_id = 5;
+    string actor_ip = 6 [(buf.validate.field).string.max_len = 45];
+
+    // Filter by subject.
+    SubjectType subject_type = 7;
+    string subject_id = 8;
+
+    // Scope to events with this app_id (matches Subject.app_id).
+    string app_id = 9;
+
+    // OR-filter on outcome.
+    repeated AuditOutcome outcomes = 10 [
+        (buf.validate.field).repeated.max_items = 4
+    ];
+}
+
+// ============================================================================
+// ListAuditEventsRequest
+// ============================================================================
+message ListAuditEventsRequest {
+    int32 page_size = 1 [
+        (buf.validate.field).int32.gte = 0,
+        (buf.validate.field).int32.lte = 1000
+    ];
+
+    string page_token = 2;
+
+    AuditFilters filters = 3;
+
+    // NOTE: no order_by - the audit log is strictly ordered by
+    // occurred_at DESC with event_id as tie-breaker.
+}
+
+// ============================================================================
+// ListAuditEventsResponse
+// ============================================================================
+message ListAuditEventsResponse {
+    repeated AuditEvent events = 1;
+    string next_page_token = 2;
+    // Absent for queries over long time ranges (total can be expensive
+    // to compute on an append-only log).
+    optional int32 total_size = 3;
+}
