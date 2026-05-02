@@ -20,6 +20,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	IdentityService_CreateUser_FullMethodName            = "/sso.identity.v1.IdentityService/CreateUser"
 	IdentityService_GetUser_FullMethodName               = "/sso.identity.v1.IdentityService/GetUser"
 	IdentityService_ListUsers_FullMethodName             = "/sso.identity.v1.IdentityService/ListUsers"
 	IdentityService_UpdateUser_FullMethodName            = "/sso.identity.v1.IdentityService/UpdateUser"
@@ -53,6 +54,33 @@ const (
 //
 // ============================================================================
 type IdentityServiceClient interface {
+	// CreateUser provisions a new identity record (administrative path).
+	//
+	// Unlike AuthService.Register, this RPC does NOT set a password and
+	// does NOT issue a session - it is intended for admin-driven and
+	// service-account-driven user provisioning. Credential setup is
+	// expected to follow via a separate invite-link flow (a one-time
+	// link issued out-of-band to the new user).
+	//
+	// The new user is created in USER_STATUS_ACTIVE. The server
+	// generates user_id (UUID), etag, created_at, and updated_at;
+	// last_login_at is left unset.
+	//
+	// User-enumeration mitigation:
+	//
+	//	On ALREADY_EXISTS the server MUST NOT disclose which specific
+	//	field (email vs username) collided. Same rationale as
+	//	AuthService.Register; see
+	//	sso.common.v1.ErrorReason.ERROR_REASON_USER_ALREADY_EXISTS.
+	//
+	// Errors:
+	//
+	//	ALREADY_EXISTS      - email or username collides
+	//	                      (ERROR_REASON_USER_ALREADY_EXISTS)
+	//	PERMISSION_DENIED   - caller lacks USER_WRITE role
+	//	INVALID_ARGUMENT    - email / username / display_name / locale /
+	//	                      timezone / avatar_url failed validation
+	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*User, error)
 	// GetUser returns identity record by user ID.
 	//
 	// Errors:
@@ -144,6 +172,16 @@ type identityServiceClient struct {
 
 func NewIdentityServiceClient(cc grpc.ClientConnInterface) IdentityServiceClient {
 	return &identityServiceClient{cc}
+}
+
+func (c *identityServiceClient) CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*User, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(User)
+	err := c.cc.Invoke(ctx, IdentityService_CreateUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *identityServiceClient) GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*User, error) {
@@ -240,6 +278,33 @@ func (c *identityServiceClient) PermanentlyDeleteUser(ctx context.Context, in *P
 //
 // ============================================================================
 type IdentityServiceServer interface {
+	// CreateUser provisions a new identity record (administrative path).
+	//
+	// Unlike AuthService.Register, this RPC does NOT set a password and
+	// does NOT issue a session - it is intended for admin-driven and
+	// service-account-driven user provisioning. Credential setup is
+	// expected to follow via a separate invite-link flow (a one-time
+	// link issued out-of-band to the new user).
+	//
+	// The new user is created in USER_STATUS_ACTIVE. The server
+	// generates user_id (UUID), etag, created_at, and updated_at;
+	// last_login_at is left unset.
+	//
+	// User-enumeration mitigation:
+	//
+	//	On ALREADY_EXISTS the server MUST NOT disclose which specific
+	//	field (email vs username) collided. Same rationale as
+	//	AuthService.Register; see
+	//	sso.common.v1.ErrorReason.ERROR_REASON_USER_ALREADY_EXISTS.
+	//
+	// Errors:
+	//
+	//	ALREADY_EXISTS      - email or username collides
+	//	                      (ERROR_REASON_USER_ALREADY_EXISTS)
+	//	PERMISSION_DENIED   - caller lacks USER_WRITE role
+	//	INVALID_ARGUMENT    - email / username / display_name / locale /
+	//	                      timezone / avatar_url failed validation
+	CreateUser(context.Context, *CreateUserRequest) (*User, error)
 	// GetUser returns identity record by user ID.
 	//
 	// Errors:
@@ -333,6 +398,9 @@ type IdentityServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedIdentityServiceServer struct{}
 
+func (UnimplementedIdentityServiceServer) CreateUser(context.Context, *CreateUserRequest) (*User, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateUser not implemented")
+}
 func (UnimplementedIdentityServiceServer) GetUser(context.Context, *GetUserRequest) (*User, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetUser not implemented")
 }
@@ -373,6 +441,24 @@ func RegisterIdentityServiceServer(s grpc.ServiceRegistrar, srv IdentityServiceS
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&IdentityService_ServiceDesc, srv)
+}
+
+func _IdentityService_CreateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IdentityServiceServer).CreateUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IdentityService_CreateUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IdentityServiceServer).CreateUser(ctx, req.(*CreateUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _IdentityService_GetUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -508,6 +594,10 @@ var IdentityService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "sso.identity.v1.IdentityService",
 	HandlerType: (*IdentityServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CreateUser",
+			Handler:    _IdentityService_CreateUser_Handler,
+		},
 		{
 			MethodName: "GetUser",
 			Handler:    _IdentityService_GetUser_Handler,

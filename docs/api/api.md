@@ -76,6 +76,7 @@
     - [AuditService](#sso-audit-v1-AuditService)
   
 - [sso/identity/v1/identity.proto](#sso_identity_v1_identity-proto)
+    - [CreateUserRequest](#sso-identity-v1-CreateUserRequest)
     - [DisableUserRequest](#sso-identity-v1-DisableUserRequest)
     - [EnableUserRequest](#sso-identity-v1-EnableUserRequest)
     - [GetUserRequest](#sso-identity-v1-GetUserRequest)
@@ -1583,6 +1584,31 @@ Errors: PERMISSION_DENIED - caller lacks AUDIT_READ INVALID_ARGUMENT - invalid p
 
 
 
+<a name="sso-identity-v1-CreateUserRequest"></a>
+
+### CreateUserRequest
+============================================================================
+CreateUserRequest - payload for CreateUser RPC
+============================================================================
+Carries only user-supplied identity fields. Server-managed fields
+(user_id, status, etag, created_at, updated_at, last_login_at) are
+not accepted on input.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| email | [string](#string) |  | User email address (RFC 5321, max 254 chars). Must be unique. |
+| username | [string](#string) |  | Unique username (1-128 chars). |
+| display_name | [string](#string) |  | Human-readable display name (1-128 chars, non-unique). |
+| avatar_url | [string](#string) | optional | Avatar image URL (0-2048 chars). Optional; absent if not set. |
+| locale | [string](#string) |  | BCP 47 language tag (e.g. &#34;en-US&#34;, &#34;ru-RU&#34;). Empty string means &#34;use system default&#34;. Loose length-only validation here; strict BCP 47 parsing is the server&#39;s responsibility. |
+| timezone | [string](#string) |  | IANA time-zone identifier (e.g. &#34;Europe/Moscow&#34;, &#34;UTC&#34;). Empty string means &#34;use system default&#34;. Strict IANA membership check is done server-side. |
+
+
+
+
+
+
 <a name="sso-identity-v1-DisableUserRequest"></a>
 
 ### DisableUserRequest
@@ -1881,6 +1907,15 @@ Security:
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
+| CreateUser | [CreateUserRequest](#sso-identity-v1-CreateUserRequest) | [User](#sso-identity-v1-User) | CreateUser provisions a new identity record (administrative path).
+
+Unlike AuthService.Register, this RPC does NOT set a password and does NOT issue a session - it is intended for admin-driven and service-account-driven user provisioning. Credential setup is expected to follow via a separate invite-link flow (a one-time link issued out-of-band to the new user).
+
+The new user is created in USER_STATUS_ACTIVE. The server generates user_id (UUID), etag, created_at, and updated_at; last_login_at is left unset.
+
+User-enumeration mitigation: On ALREADY_EXISTS the server MUST NOT disclose which specific field (email vs username) collided. Same rationale as AuthService.Register; see sso.common.v1.ErrorReason.ERROR_REASON_USER_ALREADY_EXISTS.
+
+Errors: ALREADY_EXISTS - email or username collides (ERROR_REASON_USER_ALREADY_EXISTS) PERMISSION_DENIED - caller lacks USER_WRITE role INVALID_ARGUMENT - email / username / display_name / locale / timezone / avatar_url failed validation |
 | GetUser | [GetUserRequest](#sso-identity-v1-GetUserRequest) | [User](#sso-identity-v1-User) | GetUser returns identity record by user ID.
 
 Errors: NOT_FOUND - user with given user_id does not exist PERMISSION_DENIED - caller lacks USER_READ role INVALID_ARGUMENT - user_id is not a valid UUID |
@@ -2612,7 +2647,7 @@ User-enumeration mitigation (REQUIRED on the server): The server MUST NOT reveal
 
  Deployments with a hard no-enumeration requirement (public self-registration) SHOULD additionally consider returning OK unconditionally and driving verification through an out-of-band email confirmation step.
 
-Emitted by: AuthService.Register. gRPC Status: ALREADY_EXISTS. |
+Emitted by: AuthService.Register, IdentityService.CreateUser. gRPC Status: ALREADY_EXISTS. |
 | ERROR_REASON_USER_NOT_FOUND | 41 | No user matches the requested id. Emitted by: IdentityService.*, AccessService.*, AuthService.* (when resolving a user by id). gRPC Status: NOT_FOUND. |
 | ERROR_REASON_USER_BLOCKED | 42 | Target user is in BLOCKED status and cannot perform the requested operation (e.g. Login, receive a role grant). Emitted by: AuthService.Login, AccessService.GrantRoleToUser, AccessService.BulkGrantRoles. gRPC Status: FAILED_PRECONDITION. |
 | ERROR_REASON_USER_DELETED | 43 | Target user is in DELETED status (soft-deleted). Most write operations on a deleted user are rejected. Emitted by: IdentityService.UpdateUser / EnableUser / DisableUser, AuthService.Login, AccessService.GrantRoleToUser. gRPC Status: FAILED_PRECONDITION. |

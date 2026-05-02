@@ -140,7 +140,7 @@ const (
 	//	unconditionally and driving verification through an out-of-band
 	//	email confirmation step.
 	//
-	// Emitted by: AuthService.Register.
+	// Emitted by: AuthService.Register, IdentityService.CreateUser.
 	// gRPC Status: ALREADY_EXISTS.
 	ErrorReason_ERROR_REASON_USER_ALREADY_EXISTS ErrorReason = 40
 	// No user matches the requested id.

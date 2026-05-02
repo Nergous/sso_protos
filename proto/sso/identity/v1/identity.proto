@@ -27,6 +27,32 @@ option go_package = "github.com/Nergous/sso_protos/gen/go/sso/identity/v1;ssoide
 // ============================================================================
 service IdentityService {
 
+    // CreateUser provisions a new identity record (administrative path).
+    //
+    // Unlike AuthService.Register, this RPC does NOT set a password and
+    // does NOT issue a session - it is intended for admin-driven and
+    // service-account-driven user provisioning. Credential setup is
+    // expected to follow via a separate invite-link flow (a one-time
+    // link issued out-of-band to the new user).
+    //
+    // The new user is created in USER_STATUS_ACTIVE. The server
+    // generates user_id (UUID), etag, created_at, and updated_at;
+    // last_login_at is left unset.
+    //
+    // User-enumeration mitigation:
+    //   On ALREADY_EXISTS the server MUST NOT disclose which specific
+    //   field (email vs username) collided. Same rationale as
+    //   AuthService.Register; see
+    //   sso.common.v1.ErrorReason.ERROR_REASON_USER_ALREADY_EXISTS.
+    //
+    // Errors:
+    //   ALREADY_EXISTS      - email or username collides
+    //                         (ERROR_REASON_USER_ALREADY_EXISTS)
+    //   PERMISSION_DENIED   - caller lacks USER_WRITE role
+    //   INVALID_ARGUMENT    - email / username / display_name / locale /
+    //                         timezone / avatar_url failed validation
+    rpc CreateUser(CreateUserRequest) returns (User);
+
     // GetUser returns identity record by user ID.
     //
     // Errors:
@@ -199,6 +225,45 @@ message User {
     // string if not set. Format validated loosely here; strict IANA
     // membership check is done server-side.
     string timezone = 12 [(buf.validate.field).string.max_len = 64];
+}
+
+// ============================================================================
+// CreateUserRequest - payload for CreateUser RPC
+// ============================================================================
+// Carries only user-supplied identity fields. Server-managed fields
+// (user_id, status, etag, created_at, updated_at, last_login_at) are
+// not accepted on input.
+message CreateUserRequest {
+    // User email address (RFC 5321, max 254 chars). Must be unique.
+    string email = 1 [
+        (buf.validate.field).string.email = true,
+        (buf.validate.field).string.max_len = 254
+    ];
+
+    // Unique username (1-128 chars).
+    string username = 2 [
+        (buf.validate.field).string.min_len = 1,
+        (buf.validate.field).string.max_len = 128
+    ];
+
+    // Human-readable display name (1-128 chars, non-unique).
+    string display_name = 3 [
+        (buf.validate.field).string.min_len = 1,
+        (buf.validate.field).string.max_len = 128
+    ];
+
+    // Avatar image URL (0-2048 chars). Optional; absent if not set.
+    optional string avatar_url = 4 [(buf.validate.field).string.max_len = 2048];
+
+    // BCP 47 language tag (e.g. "en-US", "ru-RU"). Empty string means
+    // "use system default". Loose length-only validation here; strict
+    // BCP 47 parsing is the server's responsibility.
+    string locale = 5 [(buf.validate.field).string.max_len = 35];
+
+    // IANA time-zone identifier (e.g. "Europe/Moscow", "UTC"). Empty
+    // string means "use system default". Strict IANA membership check
+    // is done server-side.
+    string timezone = 6 [(buf.validate.field).string.max_len = 64];
 }
 
 // ============================================================================

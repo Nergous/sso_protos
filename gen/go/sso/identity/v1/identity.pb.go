@@ -307,6 +307,106 @@ func (x *User) GetTimezone() string {
 }
 
 // ============================================================================
+// CreateUserRequest - payload for CreateUser RPC
+// ============================================================================
+// Carries only user-supplied identity fields. Server-managed fields
+// (user_id, status, etag, created_at, updated_at, last_login_at) are
+// not accepted on input.
+type CreateUserRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// User email address (RFC 5321, max 254 chars). Must be unique.
+	Email string `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	// Unique username (1-128 chars).
+	Username string `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
+	// Human-readable display name (1-128 chars, non-unique).
+	DisplayName string `protobuf:"bytes,3,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	// Avatar image URL (0-2048 chars). Optional; absent if not set.
+	AvatarUrl *string `protobuf:"bytes,4,opt,name=avatar_url,json=avatarUrl,proto3,oneof" json:"avatar_url,omitempty"`
+	// BCP 47 language tag (e.g. "en-US", "ru-RU"). Empty string means
+	// "use system default". Loose length-only validation here; strict
+	// BCP 47 parsing is the server's responsibility.
+	Locale string `protobuf:"bytes,5,opt,name=locale,proto3" json:"locale,omitempty"`
+	// IANA time-zone identifier (e.g. "Europe/Moscow", "UTC"). Empty
+	// string means "use system default". Strict IANA membership check
+	// is done server-side.
+	Timezone      string `protobuf:"bytes,6,opt,name=timezone,proto3" json:"timezone,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateUserRequest) Reset() {
+	*x = CreateUserRequest{}
+	mi := &file_sso_identity_v1_identity_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateUserRequest) ProtoMessage() {}
+
+func (x *CreateUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_sso_identity_v1_identity_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateUserRequest.ProtoReflect.Descriptor instead.
+func (*CreateUserRequest) Descriptor() ([]byte, []int) {
+	return file_sso_identity_v1_identity_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *CreateUserRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *CreateUserRequest) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *CreateUserRequest) GetDisplayName() string {
+	if x != nil {
+		return x.DisplayName
+	}
+	return ""
+}
+
+func (x *CreateUserRequest) GetAvatarUrl() string {
+	if x != nil && x.AvatarUrl != nil {
+		return *x.AvatarUrl
+	}
+	return ""
+}
+
+func (x *CreateUserRequest) GetLocale() string {
+	if x != nil {
+		return x.Locale
+	}
+	return ""
+}
+
+func (x *CreateUserRequest) GetTimezone() string {
+	if x != nil {
+		return x.Timezone
+	}
+	return ""
+}
+
+// ============================================================================
 // GetUserRequest
 // ============================================================================
 type GetUserRequest struct {
@@ -318,7 +418,7 @@ type GetUserRequest struct {
 
 func (x *GetUserRequest) Reset() {
 	*x = GetUserRequest{}
-	mi := &file_sso_identity_v1_identity_proto_msgTypes[1]
+	mi := &file_sso_identity_v1_identity_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -330,7 +430,7 @@ func (x *GetUserRequest) String() string {
 func (*GetUserRequest) ProtoMessage() {}
 
 func (x *GetUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_sso_identity_v1_identity_proto_msgTypes[1]
+	mi := &file_sso_identity_v1_identity_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -343,7 +443,7 @@ func (x *GetUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserRequest.ProtoReflect.Descriptor instead.
 func (*GetUserRequest) Descriptor() ([]byte, []int) {
-	return file_sso_identity_v1_identity_proto_rawDescGZIP(), []int{1}
+	return file_sso_identity_v1_identity_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *GetUserRequest) GetUserId() string {
@@ -375,7 +475,7 @@ type UserFilters struct {
 
 func (x *UserFilters) Reset() {
 	*x = UserFilters{}
-	mi := &file_sso_identity_v1_identity_proto_msgTypes[2]
+	mi := &file_sso_identity_v1_identity_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -387,7 +487,7 @@ func (x *UserFilters) String() string {
 func (*UserFilters) ProtoMessage() {}
 
 func (x *UserFilters) ProtoReflect() protoreflect.Message {
-	mi := &file_sso_identity_v1_identity_proto_msgTypes[2]
+	mi := &file_sso_identity_v1_identity_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -400,7 +500,7 @@ func (x *UserFilters) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserFilters.ProtoReflect.Descriptor instead.
 func (*UserFilters) Descriptor() ([]byte, []int) {
-	return file_sso_identity_v1_identity_proto_rawDescGZIP(), []int{2}
+	return file_sso_identity_v1_identity_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *UserFilters) GetSearch() string {
@@ -459,7 +559,7 @@ type ListUsersRequest struct {
 
 func (x *ListUsersRequest) Reset() {
 	*x = ListUsersRequest{}
-	mi := &file_sso_identity_v1_identity_proto_msgTypes[3]
+	mi := &file_sso_identity_v1_identity_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -471,7 +571,7 @@ func (x *ListUsersRequest) String() string {
 func (*ListUsersRequest) ProtoMessage() {}
 
 func (x *ListUsersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_sso_identity_v1_identity_proto_msgTypes[3]
+	mi := &file_sso_identity_v1_identity_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -484,7 +584,7 @@ func (x *ListUsersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListUsersRequest.ProtoReflect.Descriptor instead.
 func (*ListUsersRequest) Descriptor() ([]byte, []int) {
-	return file_sso_identity_v1_identity_proto_rawDescGZIP(), []int{3}
+	return file_sso_identity_v1_identity_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ListUsersRequest) GetPageSize() int32 {
@@ -538,7 +638,7 @@ type ListUsersResponse struct {
 
 func (x *ListUsersResponse) Reset() {
 	*x = ListUsersResponse{}
-	mi := &file_sso_identity_v1_identity_proto_msgTypes[4]
+	mi := &file_sso_identity_v1_identity_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -550,7 +650,7 @@ func (x *ListUsersResponse) String() string {
 func (*ListUsersResponse) ProtoMessage() {}
 
 func (x *ListUsersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_sso_identity_v1_identity_proto_msgTypes[4]
+	mi := &file_sso_identity_v1_identity_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -563,7 +663,7 @@ func (x *ListUsersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListUsersResponse.ProtoReflect.Descriptor instead.
 func (*ListUsersResponse) Descriptor() ([]byte, []int) {
-	return file_sso_identity_v1_identity_proto_rawDescGZIP(), []int{4}
+	return file_sso_identity_v1_identity_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ListUsersResponse) GetUsers() []*User {
@@ -632,7 +732,7 @@ type UpdateUserRequest struct {
 
 func (x *UpdateUserRequest) Reset() {
 	*x = UpdateUserRequest{}
-	mi := &file_sso_identity_v1_identity_proto_msgTypes[5]
+	mi := &file_sso_identity_v1_identity_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -644,7 +744,7 @@ func (x *UpdateUserRequest) String() string {
 func (*UpdateUserRequest) ProtoMessage() {}
 
 func (x *UpdateUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_sso_identity_v1_identity_proto_msgTypes[5]
+	mi := &file_sso_identity_v1_identity_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -657,7 +757,7 @@ func (x *UpdateUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateUserRequest.ProtoReflect.Descriptor instead.
 func (*UpdateUserRequest) Descriptor() ([]byte, []int) {
-	return file_sso_identity_v1_identity_proto_rawDescGZIP(), []int{5}
+	return file_sso_identity_v1_identity_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *UpdateUserRequest) GetUserId() string {
@@ -704,7 +804,7 @@ type DisableUserRequest struct {
 
 func (x *DisableUserRequest) Reset() {
 	*x = DisableUserRequest{}
-	mi := &file_sso_identity_v1_identity_proto_msgTypes[6]
+	mi := &file_sso_identity_v1_identity_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -716,7 +816,7 @@ func (x *DisableUserRequest) String() string {
 func (*DisableUserRequest) ProtoMessage() {}
 
 func (x *DisableUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_sso_identity_v1_identity_proto_msgTypes[6]
+	mi := &file_sso_identity_v1_identity_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -729,7 +829,7 @@ func (x *DisableUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DisableUserRequest.ProtoReflect.Descriptor instead.
 func (*DisableUserRequest) Descriptor() ([]byte, []int) {
-	return file_sso_identity_v1_identity_proto_rawDescGZIP(), []int{6}
+	return file_sso_identity_v1_identity_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *DisableUserRequest) GetUserId() string {
@@ -758,7 +858,7 @@ type EnableUserRequest struct {
 
 func (x *EnableUserRequest) Reset() {
 	*x = EnableUserRequest{}
-	mi := &file_sso_identity_v1_identity_proto_msgTypes[7]
+	mi := &file_sso_identity_v1_identity_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -770,7 +870,7 @@ func (x *EnableUserRequest) String() string {
 func (*EnableUserRequest) ProtoMessage() {}
 
 func (x *EnableUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_sso_identity_v1_identity_proto_msgTypes[7]
+	mi := &file_sso_identity_v1_identity_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -783,7 +883,7 @@ func (x *EnableUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EnableUserRequest.ProtoReflect.Descriptor instead.
 func (*EnableUserRequest) Descriptor() ([]byte, []int) {
-	return file_sso_identity_v1_identity_proto_rawDescGZIP(), []int{7}
+	return file_sso_identity_v1_identity_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *EnableUserRequest) GetUserId() string {
@@ -812,7 +912,7 @@ type SoftDeleteUserRequest struct {
 
 func (x *SoftDeleteUserRequest) Reset() {
 	*x = SoftDeleteUserRequest{}
-	mi := &file_sso_identity_v1_identity_proto_msgTypes[8]
+	mi := &file_sso_identity_v1_identity_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -824,7 +924,7 @@ func (x *SoftDeleteUserRequest) String() string {
 func (*SoftDeleteUserRequest) ProtoMessage() {}
 
 func (x *SoftDeleteUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_sso_identity_v1_identity_proto_msgTypes[8]
+	mi := &file_sso_identity_v1_identity_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -837,7 +937,7 @@ func (x *SoftDeleteUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SoftDeleteUserRequest.ProtoReflect.Descriptor instead.
 func (*SoftDeleteUserRequest) Descriptor() ([]byte, []int) {
-	return file_sso_identity_v1_identity_proto_rawDescGZIP(), []int{8}
+	return file_sso_identity_v1_identity_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *SoftDeleteUserRequest) GetUserId() string {
@@ -876,7 +976,7 @@ type PermanentlyDeleteUserRequest struct {
 
 func (x *PermanentlyDeleteUserRequest) Reset() {
 	*x = PermanentlyDeleteUserRequest{}
-	mi := &file_sso_identity_v1_identity_proto_msgTypes[9]
+	mi := &file_sso_identity_v1_identity_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -888,7 +988,7 @@ func (x *PermanentlyDeleteUserRequest) String() string {
 func (*PermanentlyDeleteUserRequest) ProtoMessage() {}
 
 func (x *PermanentlyDeleteUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_sso_identity_v1_identity_proto_msgTypes[9]
+	mi := &file_sso_identity_v1_identity_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -901,7 +1001,7 @@ func (x *PermanentlyDeleteUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PermanentlyDeleteUserRequest.ProtoReflect.Descriptor instead.
 func (*PermanentlyDeleteUserRequest) Descriptor() ([]byte, []int) {
-	return file_sso_identity_v1_identity_proto_rawDescGZIP(), []int{9}
+	return file_sso_identity_v1_identity_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *PermanentlyDeleteUserRequest) GetUserId() string {
@@ -941,7 +1041,19 @@ const file_sso_identity_v1_identity_proto_rawDesc = "" +
 	"\x06locale\x18\v \x01(\tB\a\xbaH\x04r\x02\x18#R\x06locale\x12#\n" +
 	"\btimezone\x18\f \x01(\tB\a\xbaH\x04r\x02\x18@R\btimezoneB\r\n" +
 	"\v_avatar_urlB\x10\n" +
-	"\x0e_last_login_at\"3\n" +
+	"\x0e_last_login_at\"\x8f\x02\n" +
+	"\x11CreateUserRequest\x12 \n" +
+	"\x05email\x18\x01 \x01(\tB\n" +
+	"\xbaH\ar\x05\x18\xfe\x01`\x01R\x05email\x12&\n" +
+	"\busername\x18\x02 \x01(\tB\n" +
+	"\xbaH\ar\x05\x10\x01\x18\x80\x01R\busername\x12-\n" +
+	"\fdisplay_name\x18\x03 \x01(\tB\n" +
+	"\xbaH\ar\x05\x10\x01\x18\x80\x01R\vdisplayName\x12,\n" +
+	"\n" +
+	"avatar_url\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x10H\x00R\tavatarUrl\x88\x01\x01\x12\x1f\n" +
+	"\x06locale\x18\x05 \x01(\tB\a\xbaH\x04r\x02\x18#R\x06locale\x12#\n" +
+	"\btimezone\x18\x06 \x01(\tB\a\xbaH\x04r\x02\x18@R\btimezoneB\r\n" +
+	"\v_avatar_url\"3\n" +
 	"\x0eGetUserRequest\x12!\n" +
 	"\auser_id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x06userId\"\xff\x01\n" +
 	"\vUserFilters\x12 \n" +
@@ -995,8 +1107,10 @@ const file_sso_identity_v1_identity_proto_rawDesc = "" +
 	"\x17USER_STATUS_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12USER_STATUS_ACTIVE\x10\x01\x12\x17\n" +
 	"\x13USER_STATUS_BLOCKED\x10\x02\x12\x17\n" +
-	"\x13USER_STATUS_DELETED\x10\x03\"\x05\bd\x10\xc7\x012\xb9\x04\n" +
-	"\x0fIdentityService\x12A\n" +
+	"\x13USER_STATUS_DELETED\x10\x03\"\x05\bd\x10\xc7\x012\x82\x05\n" +
+	"\x0fIdentityService\x12G\n" +
+	"\n" +
+	"CreateUser\x12\".sso.identity.v1.CreateUserRequest\x1a\x15.sso.identity.v1.User\x12A\n" +
 	"\aGetUser\x12\x1f.sso.identity.v1.GetUserRequest\x1a\x15.sso.identity.v1.User\x12R\n" +
 	"\tListUsers\x12!.sso.identity.v1.ListUsersRequest\x1a\".sso.identity.v1.ListUsersResponse\x12G\n" +
 	"\n" +
@@ -1021,51 +1135,54 @@ func file_sso_identity_v1_identity_proto_rawDescGZIP() []byte {
 }
 
 var file_sso_identity_v1_identity_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_sso_identity_v1_identity_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_sso_identity_v1_identity_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_sso_identity_v1_identity_proto_goTypes = []any{
 	(ListUsersOrderBy)(0),                // 0: sso.identity.v1.ListUsersOrderBy
 	(UserStatus)(0),                      // 1: sso.identity.v1.UserStatus
 	(*User)(nil),                         // 2: sso.identity.v1.User
-	(*GetUserRequest)(nil),               // 3: sso.identity.v1.GetUserRequest
-	(*UserFilters)(nil),                  // 4: sso.identity.v1.UserFilters
-	(*ListUsersRequest)(nil),             // 5: sso.identity.v1.ListUsersRequest
-	(*ListUsersResponse)(nil),            // 6: sso.identity.v1.ListUsersResponse
-	(*UpdateUserRequest)(nil),            // 7: sso.identity.v1.UpdateUserRequest
-	(*DisableUserRequest)(nil),           // 8: sso.identity.v1.DisableUserRequest
-	(*EnableUserRequest)(nil),            // 9: sso.identity.v1.EnableUserRequest
-	(*SoftDeleteUserRequest)(nil),        // 10: sso.identity.v1.SoftDeleteUserRequest
-	(*PermanentlyDeleteUserRequest)(nil), // 11: sso.identity.v1.PermanentlyDeleteUserRequest
-	(*timestamppb.Timestamp)(nil),        // 12: google.protobuf.Timestamp
-	(*fieldmaskpb.FieldMask)(nil),        // 13: google.protobuf.FieldMask
-	(*emptypb.Empty)(nil),                // 14: google.protobuf.Empty
+	(*CreateUserRequest)(nil),            // 3: sso.identity.v1.CreateUserRequest
+	(*GetUserRequest)(nil),               // 4: sso.identity.v1.GetUserRequest
+	(*UserFilters)(nil),                  // 5: sso.identity.v1.UserFilters
+	(*ListUsersRequest)(nil),             // 6: sso.identity.v1.ListUsersRequest
+	(*ListUsersResponse)(nil),            // 7: sso.identity.v1.ListUsersResponse
+	(*UpdateUserRequest)(nil),            // 8: sso.identity.v1.UpdateUserRequest
+	(*DisableUserRequest)(nil),           // 9: sso.identity.v1.DisableUserRequest
+	(*EnableUserRequest)(nil),            // 10: sso.identity.v1.EnableUserRequest
+	(*SoftDeleteUserRequest)(nil),        // 11: sso.identity.v1.SoftDeleteUserRequest
+	(*PermanentlyDeleteUserRequest)(nil), // 12: sso.identity.v1.PermanentlyDeleteUserRequest
+	(*timestamppb.Timestamp)(nil),        // 13: google.protobuf.Timestamp
+	(*fieldmaskpb.FieldMask)(nil),        // 14: google.protobuf.FieldMask
+	(*emptypb.Empty)(nil),                // 15: google.protobuf.Empty
 }
 var file_sso_identity_v1_identity_proto_depIdxs = []int32{
 	1,  // 0: sso.identity.v1.User.status:type_name -> sso.identity.v1.UserStatus
-	12, // 1: sso.identity.v1.User.created_at:type_name -> google.protobuf.Timestamp
-	12, // 2: sso.identity.v1.User.updated_at:type_name -> google.protobuf.Timestamp
-	12, // 3: sso.identity.v1.User.last_login_at:type_name -> google.protobuf.Timestamp
+	13, // 1: sso.identity.v1.User.created_at:type_name -> google.protobuf.Timestamp
+	13, // 2: sso.identity.v1.User.updated_at:type_name -> google.protobuf.Timestamp
+	13, // 3: sso.identity.v1.User.last_login_at:type_name -> google.protobuf.Timestamp
 	1,  // 4: sso.identity.v1.UserFilters.statuses:type_name -> sso.identity.v1.UserStatus
-	4,  // 5: sso.identity.v1.ListUsersRequest.filters:type_name -> sso.identity.v1.UserFilters
+	5,  // 5: sso.identity.v1.ListUsersRequest.filters:type_name -> sso.identity.v1.UserFilters
 	0,  // 6: sso.identity.v1.ListUsersRequest.order_by:type_name -> sso.identity.v1.ListUsersOrderBy
 	2,  // 7: sso.identity.v1.ListUsersResponse.users:type_name -> sso.identity.v1.User
 	2,  // 8: sso.identity.v1.UpdateUserRequest.user:type_name -> sso.identity.v1.User
-	13, // 9: sso.identity.v1.UpdateUserRequest.update_mask:type_name -> google.protobuf.FieldMask
-	3,  // 10: sso.identity.v1.IdentityService.GetUser:input_type -> sso.identity.v1.GetUserRequest
-	5,  // 11: sso.identity.v1.IdentityService.ListUsers:input_type -> sso.identity.v1.ListUsersRequest
-	7,  // 12: sso.identity.v1.IdentityService.UpdateUser:input_type -> sso.identity.v1.UpdateUserRequest
-	8,  // 13: sso.identity.v1.IdentityService.DisableUser:input_type -> sso.identity.v1.DisableUserRequest
-	9,  // 14: sso.identity.v1.IdentityService.EnableUser:input_type -> sso.identity.v1.EnableUserRequest
-	10, // 15: sso.identity.v1.IdentityService.SoftDeleteUser:input_type -> sso.identity.v1.SoftDeleteUserRequest
-	11, // 16: sso.identity.v1.IdentityService.PermanentlyDeleteUser:input_type -> sso.identity.v1.PermanentlyDeleteUserRequest
-	2,  // 17: sso.identity.v1.IdentityService.GetUser:output_type -> sso.identity.v1.User
-	6,  // 18: sso.identity.v1.IdentityService.ListUsers:output_type -> sso.identity.v1.ListUsersResponse
-	2,  // 19: sso.identity.v1.IdentityService.UpdateUser:output_type -> sso.identity.v1.User
-	14, // 20: sso.identity.v1.IdentityService.DisableUser:output_type -> google.protobuf.Empty
-	14, // 21: sso.identity.v1.IdentityService.EnableUser:output_type -> google.protobuf.Empty
-	14, // 22: sso.identity.v1.IdentityService.SoftDeleteUser:output_type -> google.protobuf.Empty
-	14, // 23: sso.identity.v1.IdentityService.PermanentlyDeleteUser:output_type -> google.protobuf.Empty
-	17, // [17:24] is the sub-list for method output_type
-	10, // [10:17] is the sub-list for method input_type
+	14, // 9: sso.identity.v1.UpdateUserRequest.update_mask:type_name -> google.protobuf.FieldMask
+	3,  // 10: sso.identity.v1.IdentityService.CreateUser:input_type -> sso.identity.v1.CreateUserRequest
+	4,  // 11: sso.identity.v1.IdentityService.GetUser:input_type -> sso.identity.v1.GetUserRequest
+	6,  // 12: sso.identity.v1.IdentityService.ListUsers:input_type -> sso.identity.v1.ListUsersRequest
+	8,  // 13: sso.identity.v1.IdentityService.UpdateUser:input_type -> sso.identity.v1.UpdateUserRequest
+	9,  // 14: sso.identity.v1.IdentityService.DisableUser:input_type -> sso.identity.v1.DisableUserRequest
+	10, // 15: sso.identity.v1.IdentityService.EnableUser:input_type -> sso.identity.v1.EnableUserRequest
+	11, // 16: sso.identity.v1.IdentityService.SoftDeleteUser:input_type -> sso.identity.v1.SoftDeleteUserRequest
+	12, // 17: sso.identity.v1.IdentityService.PermanentlyDeleteUser:input_type -> sso.identity.v1.PermanentlyDeleteUserRequest
+	2,  // 18: sso.identity.v1.IdentityService.CreateUser:output_type -> sso.identity.v1.User
+	2,  // 19: sso.identity.v1.IdentityService.GetUser:output_type -> sso.identity.v1.User
+	7,  // 20: sso.identity.v1.IdentityService.ListUsers:output_type -> sso.identity.v1.ListUsersResponse
+	2,  // 21: sso.identity.v1.IdentityService.UpdateUser:output_type -> sso.identity.v1.User
+	15, // 22: sso.identity.v1.IdentityService.DisableUser:output_type -> google.protobuf.Empty
+	15, // 23: sso.identity.v1.IdentityService.EnableUser:output_type -> google.protobuf.Empty
+	15, // 24: sso.identity.v1.IdentityService.SoftDeleteUser:output_type -> google.protobuf.Empty
+	15, // 25: sso.identity.v1.IdentityService.PermanentlyDeleteUser:output_type -> google.protobuf.Empty
+	18, // [18:26] is the sub-list for method output_type
+	10, // [10:18] is the sub-list for method input_type
 	10, // [10:10] is the sub-list for extension type_name
 	10, // [10:10] is the sub-list for extension extendee
 	0,  // [0:10] is the sub-list for field type_name
@@ -1077,14 +1194,15 @@ func file_sso_identity_v1_identity_proto_init() {
 		return
 	}
 	file_sso_identity_v1_identity_proto_msgTypes[0].OneofWrappers = []any{}
-	file_sso_identity_v1_identity_proto_msgTypes[4].OneofWrappers = []any{}
+	file_sso_identity_v1_identity_proto_msgTypes[1].OneofWrappers = []any{}
+	file_sso_identity_v1_identity_proto_msgTypes[5].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_sso_identity_v1_identity_proto_rawDesc), len(file_sso_identity_v1_identity_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   10,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
